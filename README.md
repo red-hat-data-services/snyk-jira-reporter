@@ -9,7 +9,6 @@ To use it, simply create a workflow file(yaml) in your `.github/workflows` and d
 
 ## Example yaml
 ```yaml
-some:
   name: Create Jira from Snyk
 on:
   workflow_dispatch:
