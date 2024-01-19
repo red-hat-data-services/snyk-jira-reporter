@@ -3,9 +3,6 @@ name: Create Jira from Snyk
 on:
   workflow_call:
     inputs:
-      # jira_api_token:
-      #   required: true
-      #   type: string
       jira_server:
         required: true
         type: string
@@ -21,9 +18,6 @@ on:
       jira_label_prefix:
         required: false
         type: string
-      # snyk_api_token:
-      #   required: true
-      #   type: string
       snyk_org_id:
         required: true
         type: string
