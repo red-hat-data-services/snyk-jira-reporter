@@ -29,21 +29,21 @@ jobs:
         secrets: inherit
 ```
 ### NOTE:
-    Please note that there are two secrets and a folder that needs to be set up for the script to work properly.
+  Please note that there are two secrets and a folder that needs to be set up for the script to work properly.
 
-    * The `SNYK_API_TOKEN` and `JIRA_API_TOKEN` are two secrets which provide auth mechanism for the code to read and create jiras. So it is important to set this either in the repo level or org level.
-    * In case you need to exclude folders, insert regex in `exclude_files.json` in format:
-    ```json
-    {
-        "opendatahub/opendatahub-operator": {
-            "^modules/.*/vendor": ""
-        },
-        "/": {
-            "path_regex": "<empty_string>"
-        }
-    }
-    ```
-    Also note that this file has to be stored in the repo and referenced in the variable `exclude_files_path`.
+  * The `SNYK_API_TOKEN` and `JIRA_API_TOKEN` are two secrets which provide auth mechanism for the code to read and create jiras. So it is important to set this either in the repo level or org level.
+  * In case you need to exclude folders, insert regex in `exclude_files.json` in format:
+  ```json
+  {
+      "opendatahub/opendatahub-operator": {
+          "^modules/.*/vendor": ""
+      },
+      "/": {
+          "path_regex": "<empty_string>"
+      }
+  }
+  ```
+  Also note that this file has to be stored in the repo and referenced in the variable `exclude_files_path`.
 
 ## List of available variables to customise
 
@@ -60,5 +60,5 @@ jobs:
 | jira_label_prefix |  Optional. This is used to add a prefix to the label   |
 
 ### Note:
-    The secrets: inherit is important as it passes the secrets to the reusable workflows.
+  The `secrets: inherit` is important as it passes the secrets to the reusable workflows.
   
