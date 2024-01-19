@@ -1,0 +1,77 @@
+name: Create Jira from Snyk
+
+on:
+  workflow_call:
+    inputs:
+      # jira_api_token:
+      #   required: true
+      #   type: string
+      jira_server:
+        required: true
+        type: string
+      jira_project_id:
+        required: true
+        type: string
+      jira_component_names:
+        required: true
+        type: string
+      jira_epic_id:
+        required: true
+        type: string
+      jira_label_prefix:
+        required: false
+        type: string
+      # snyk_api_token:
+      #   required: true
+      #   type: string
+      snyk_org_id:
+        required: true
+        type: string
+      snyk_project_id:
+        required: true
+        type: string
+      dry_run:
+        required: true
+        type: string
+        default: false
+      exclude_files_path:
+        required: true
+        type: string
+      
+env:
+    # JIRA envs
+  JIRA_API_TOKEN: ${{ secrets.jira_api_token }}
+  JIRA_SERVER: ${{ inputs.jira_server }}
+  JIRA_PROJECT_ID: ${{ inputs.jira_project_id }} # refers to RHOAIENG
+  JIRA_COMPONENT_NAMES: ${{ inputs.jira_component_names }} # A list of comma separated values. Eg. Platform,Dashboard
+  JIRA_EPIC_ID: ${{ inputs.jira_epic_id }} # refers to https://issues.redhat.com/browse/RHOAIENG-1430(This has to be periodically changed)
+  JIRA_LABEL_PREFIX: ${{ inputs.jira_label_prefix }}
+  # SNYK envs
+  SNYK_API_TOKEN: ${{ secrets.snyk_api_token }}
+  SNYK_ORG_ID: ${{ inputs.snyk_org_id }} # refers to the RHOAI org in Snyk
+  SNYK_PROJECT_ID: ${{ inputs.snyk_project_id }} # refers to the red-hat-data-services/rhods-operator
+  #other envs
+  DRY_RUN: ${{ inputs.dry_run }} # to be removed later
+  EXCLUDE_FILES_PATH: ${{ inputs.exclude_files_path }} # refers to a pattern that can exclude files
+
+jobs:
+  jira-snyk-sync-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+
+      - name: setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pysnyk==0.9.19
+          pip install python-dotenv==1.0.0
+          pip install jira==3.6.0
+
+      - name: execute py script for automation 
+        run: curl https://raw.githubusercontent.com/AjayJagan/jira-snyk-resuable-workflow/main/scripts/jira-automation.py | python -
