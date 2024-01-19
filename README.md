@@ -57,6 +57,7 @@ jobs:
 | snyk_project_id |  Each project in Snyk has a unique id. Can be found in the settings.   |
 | dry_run |  Runs the script without really creating the JIRA.   |
 | exclude_files_path |  Path which hosts the exclude_files.json   |
+| jira_label_prefix |  Optional. This is used to add a prefix to the label   |
 
 ### Note:
     The secrets: inherit is important as it passes the secrets to the reusable workflows.
