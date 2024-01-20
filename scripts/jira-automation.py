@@ -10,9 +10,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-VULNERABILITY_SEVERITIES = ["critical", "high"]
-
-
 class SnykClient:
     __client: snyk.SnykClient
 
@@ -142,6 +139,7 @@ class JiraClient:
             except SystemError:
                 logging.error("failed to create jira issues")
         else:
+            print(jira_issues_to_create)
             print(f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)")
 
     def list_existing_jira_issues(
