@@ -8,7 +8,9 @@ import sys
 from jira import JIRA
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+
+VULNERABILITY_SEVERITIES = ["critical", "high"]
+
 
 class SnykClient:
     __client: snyk.SnykClient
@@ -35,7 +37,7 @@ class JiraClient:
     __client: JIRA
     __jira_label_prefix: str
     __jira_project_id: str
-    __jira_component_list: []
+    __component_mapping: {}
     __dry_run: bool
 
     def __init__(
@@ -44,10 +46,10 @@ class JiraClient:
             jira_api_token: str,
             jira_label_prefix: str,
             jira_project_id: str,
-            jira_component_list: [],
+            component_mapping: {},
             dry_run: bool):
         try:
-            self.__jira_component_list = jira_component_list
+            self.__component_mapping = component_mapping
             self.__jira_label_prefix = jira_label_prefix
             self.__jira_project_id = jira_project_id
             self.__dry_run = dry_run
@@ -76,11 +78,13 @@ class JiraClient:
         """
         return self.__jira_project_id
 
-    def get_component_list(self) -> []:
+    def get_component_mapping(self) -> {}:
         """
-        returns the list of components
+        returns dict with mapping between github repositories and jira components
+
+        :return: mapping between github repositories and jira components
         """
-        return self.__jira_component_list
+        return self.__component_mapping
 
     def get_jira_label_prefix(self) -> str:
         """
@@ -91,16 +95,12 @@ class JiraClient:
         """
         return self.__jira_label_prefix
 
-    def get_component_dict_list(self, component):
-        return {"name": component}
-    
     def create_jira_issues(
             self,
             vulnerabilities_to_create: [],
             jira_project_id: str,
             snyk_project_id: str,
-            snyk_org_slug: str,
-            jira_epic_id: str):
+            snyk_org_slug: str):
         """
         creates new jira bugs from given list of vulnerabilities
 
@@ -116,7 +116,7 @@ class JiraClient:
                           "description": vulnerability.get_jira_description(
                               snyk_org_slug,
                               snyk_project_id),
-                          "components": list(map(self.get_component_dict_list, vulnerability.get_component_list())),
+                          "components": [{"name": vulnerability.get_component()}],
                           "duedate": vulnerability.calculate_due_date(),
                           "issuetype": {'name': 'Bug'},
                           "labels": [vulnerability.get_jira_snyk_id()]}
@@ -126,20 +126,12 @@ class JiraClient:
             try:
                 created_jira_issues = self.__client.create_issues(
                     jira_issues_to_create)
-                issue_keys = []
-                for issue in created_jira_issues:
-                    for key in issue:
-                        issue_keys.append(key)
-                self.__client.add_issues_to_epic(jira_epic_id, issue_keys)
                 for issue in created_jira_issues:
                     logging.info(
                         f"Created JIRA issue key: {issue['issue']}")
-                logging.info(
-                        f"Added to the epic: {jira_epic_id['jira_epic_id']}")
             except SystemError:
                 logging.error("failed to create jira issues")
         else:
-            print(jira_issues_to_create)
             print(f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)")
 
     def list_existing_jira_issues(
@@ -174,7 +166,7 @@ class VulnerabilityData:
     __fixed_in: []
     __project_name: str
     __file_path: str
-    __component_list: []
+    __component: str
     __severity: str
     __cvss_score: float
     __identifiers: {}
@@ -191,7 +183,7 @@ class VulnerabilityData:
             fixed_in: [],
             project_name: str,
             file_name: str,
-            component_list: [],
+            component: str,
             cvss_score: float,
             identifiers: {},
             severity: str):
@@ -205,7 +197,7 @@ class VulnerabilityData:
         self.__fixed_in = fixed_in
         self.__project_name = project_name
         self.__file_path = file_name
-        self.__component_list = component_list
+        self.__component = component
         self.__cvss_score = cvss_score
         self.__identifiers = identifiers
         self.__severity = severity
@@ -313,14 +305,14 @@ class VulnerabilityData:
 
         return self.__file_path
 
-    def get_component_list(self) -> []:
+    def get_component(self) -> str:
         """
-        returns jira component list
+        returns jira component
 
-        :return: returns jira component list
+        :return: returns jira component
         """
 
-        return self.__component_list
+        return self.__component
 
     def get_severity(self) -> str:
         """
@@ -391,7 +383,11 @@ def list_snyk_vulnerabilities(
     patchable_vulnerabilities = []
     jira_query = f"project={jira_client.get_project_id()} AND ("
     for vulnerability in vulnerabilities:
+        if vulnerability.issueData.severity in VULNERABILITY_SEVERITIES:
             jira_snyk_id = f"{jira_client.get_jira_label_prefix()}{project_name}:{file_name}:{project_branch}:{vulnerability.id}"
+            component_mapping = jira_client.get_component_mapping()
+            component = component_mapping[project_name] if project_name in component_mapping else ""
+
             vulnerability_obj = VulnerabilityData(
                 snyk_id=vulnerability.id,
                 jira_snyk_id=jira_snyk_id,
@@ -403,7 +399,7 @@ def list_snyk_vulnerabilities(
                 project_name=project_name,
                 project_branch=project_branch,
                 file_name=file_name,
-                component_list=jira_client.get_component_list(),
+                component=component,
                 cvss_score=vulnerability.issueData.cvssScore,
                 identifiers=vulnerability.issueData.identifiers,
                 severity=vulnerability.issueData.severity)
@@ -445,15 +441,18 @@ def exclude_file(file_name: str, excluded_files: dict) -> bool:
 
 def process_projects(
         jira_client: JiraClient,
-        project: any,
-        exclude_files: dict,
-        jira_epic_id:str):
+        projects: [],
+        exclude_files: dict):
+    for project in projects:
         project_name = parse_project_name(project.name, project.branch)
         file_name = parse_file_name(project.name)
+
         excluded_files = exclude_files.get(project_name, None)
         if excluded_files and exclude_file(file_name, excluded_files):
             logging.info(
                 f"skipping file {file_name}, because of the record in exclude_file.json")
+            continue
+
         issue_set = project.issueset_aggregated.all()
         if issue_set.issues:
             logging.info(
@@ -466,16 +465,15 @@ def process_projects(
                     vulnerabilities_to_compare_list,
                     jira_query,
                     project.id,
-                    project.organization.slug,
-                    jira_epic_id)
-                
+                    project.organization.slug)
+
+
 def process_vulnerabilities(
         jira_client: JiraClient,
         vulnerabilities_to_compare_list: [],
         jira_query: str,
         project_id: str,
-        snyk_org_slug: str,
-        jira_epic_id: str):
+        snyk_org_slug: str):
     load_more = True
     start_at = 0
     max_results = 50
@@ -492,22 +490,22 @@ def process_vulnerabilities(
                 vulnerabilities_to_create_list,
                 jira_client.get_project_id(),
                 project_id,
-                snyk_org_slug,
-                jira_epic_id
-                )
+                snyk_org_slug)
             start_at += max_results
 
 
 def load_mapping(file_path: str) -> {}:
     try:
-        os.path.isfile(file_path)
+        dirname = os.path.dirname(__file__)
+        rel_file_path = os.path.join(dirname, file_path)
+        os.path.isfile(rel_file_path)
     except SystemError:
         logging.error("the file does not exists")
         sys.exit(1)
 
     component_maping = {}
     try:
-        with open(file_path) as f:
+        with open(rel_file_path) as f:
             data = f.read()
             component_maping = json.loads(data)
     except SystemError:
@@ -518,74 +516,56 @@ def load_mapping(file_path: str) -> {}:
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    load_dotenv()
-    # These env vars can be stored in a GH secret.
+
+    jira_component_mapping_file_path = os.environ.get("COMPONENT_MAPPING_FILE_PATH") if os.environ.get(
+        "COMPONENT_MAPPING_FILE_PATH") else "../config/jira_components_mapping.json"
+    components_mapping = load_mapping(
+        jira_component_mapping_file_path)
+
+    exclude_files_file_path = os.environ.get("EXCLUDE_FILES_FILE_PATH") if os.environ.get(
+        "EXCLUDE_FILES_FILE_PATH") else "../config/exclude_files.json"
+    exclude_files_mapping = load_mapping(
+        exclude_files_file_path)
+
+    snyk_org_id = os.environ.get("SNYK_ORG_ID")
+    if not snyk_org_id:
+        logging.error("SNYK_ORG_ID env variable not defined")
+        sys.exit(2)
     snyk_api_token = os.environ.get("SNYK_API_TOKEN")
     if not snyk_api_token:
         logging.error("SNYK_API_TOKEN env variable not defined")
+        sys.exit(2)
+    jira_server = os.environ.get("JIRA_SERVER")
+    if not jira_server:
+        logging.error("JIRA_SERVER env variable not defined")
         sys.exit(2)
     jira_api_token = os.environ.get("JIRA_API_TOKEN")
     if not jira_api_token:
         logging.error("JIRA_API_TOKEN env variable not defined")
         sys.exit(2)
-    # These variables are read from the .env file
-    snyk_org_id =os.environ.get("SNYK_ORG_ID")
-    logging.info(snyk_org_id)
-    if not snyk_org_id:
-        logging.error("SNYK_ORG_ID env variable not defined")
-        sys.exit(2)
-    jira_server =os.environ.get("JIRA_SERVER")
-    logging.info(jira_server)
-    if not jira_server:
-        logging.error("JIRA_SERVER env variable not defined")
-        sys.exit(2)
-    jira_project_id =os.environ.get("JIRA_PROJECT_ID")
-    logging.info(jira_project_id)
+    jira_project_id = os.environ.get("JIRA_PROJECT_ID")
     if not jira_project_id:
         logging.error("JIRA_PROJECT_ID env variable not defined")
         sys.exit(2)
 
-    jira_label_prefix =os.environ.get("JIRA_LABEL_PREFIX") if os.environ.get(
+    jira_label_prefix = os.environ.get("JIRA_LABEL_PREFIX") if os.environ.get(
         "JIRA_LABEL_PREFIX") else "snyk-jira-integration:"
     
-    jira_component_list =os.environ.get("JIRA_COMPONENT_NAMES")
-    logging.info(jira_component_list)
-    if not jira_component_list:
-        logging.error("JIRA_COMPONENT_NAMES not defined")
-        sys.exit(2)
-
-    jira_epic_id =os.environ.get("JIRA_EPIC_ID")
-    logging.info(jira_epic_id)
-    if not jira_epic_id:
-        logging.error("JIRA_PROJECT_ID env variable not defined")
-        sys.exit(2)
-
-    snyk_project_id =os.environ.get("SNYK_PROJECT_ID")
-    logging.info(snyk_project_id)
-    if not snyk_project_id:
-        logging.error("SNYK_PROJECT_ID env variable not defined")
-        sys.exit(2)
-
-    dry_run =os.environ.get("DRY_RUN")
+    dry_run = os.environ.get("DRY_RUN")
     if dry_run:
         logging.info("DRY_RUN is enabled")
 
-    exclude_files_path = os.environ.get("EXCLUDE_FILES_PATH") if os.environ.get(
-        "EXCLUDE_FILES_PATH") else "exclude_files.json"
-    exclude_files_mapping = load_mapping(
-        exclude_files_path)
-    logging.info(exclude_files_path)
     snyk_client = SnykClient(snyk_api_token)
     snyk_org = snyk_client.get_organization(snyk_org_id)
-    project = snyk_org.projects.get(snyk_project_id)
+    projects = snyk_org.projects.all()
     jira_client = JiraClient(
         jira_server,
         jira_api_token,
         jira_label_prefix,
         jira_project_id,
-        jira_component_list.split(","),
+        components_mapping,
         dry_run)
-    process_projects(jira_client, project, exclude_files_mapping,jira_epic_id)
+    process_projects(jira_client, projects, exclude_files_mapping)
 
 
 if __name__ == "__main__":
