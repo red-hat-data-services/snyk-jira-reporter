@@ -136,7 +136,7 @@ class JiraClient:
 
     def list_existing_jira_issues(
             self,
-            jira_query: str,
+            jira_query_list: [str],
             start_at: int,
             max_results: int) -> ([], bool):
         """
@@ -147,10 +147,12 @@ class JiraClient:
         :param max_results: number of results jira should return
         :return: list of jira bugs, boolean, if there are any more results
         """
-        issues = self.__client.search_issues(
-            jql_str=jira_query,
+        issues = {}
+        for query in jira_query_list:
+            issues.update(self.__client.search_issues(
+            jql_str=query,
             startAt=start_at,
-            maxResults=max_results)
+            maxResults=max_results))
         return issues, False
 
 
@@ -382,8 +384,17 @@ def list_snyk_vulnerabilities(
         jira_client: JiraClient) -> ([], str):
     patchable_vulnerabilities = []
     jira_query = f"project={jira_client.get_project_id()} AND ("
+    jira_query_list = []
+    label_counter = 0
     for vulnerability in vulnerabilities:
         if vulnerability.issueData.severity in VULNERABILITY_SEVERITIES:
+            # split logic if the request header it too big
+            if label_counter > 20:
+                label_counter = 0
+                # remove last OR operand from query
+                jira_query = jira_query[:-2] + ")"
+                jira_query_list.append(jira_query)
+                jira_query = f"project={jira_client.get_project_id()} AND ("
             jira_snyk_id = f"{jira_client.get_jira_label_prefix()}{project_name}:{file_name}:{project_branch}:{vulnerability.id}"
             component_mapping = jira_client.get_component_mapping()
             component = component_mapping[project_name] if project_name in component_mapping else ""
@@ -406,9 +417,11 @@ def list_snyk_vulnerabilities(
             patchable_vulnerabilities.append(vulnerability_obj)
 
             jira_query += f" labels=\"{jira_snyk_id}\" OR"
+            label_counter+=1
     # remove last OR operand from query
     jira_query = jira_query[:-2] + ")"
-    return patchable_vulnerabilities, jira_query
+    jira_query_list.append(jira_query)
+    return patchable_vulnerabilities, jira_query_list
 
 
 def compare_jira_snyk(
@@ -457,13 +470,13 @@ def process_projects(
         if issue_set.issues:
             logging.info(
                 f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}")
-            vulnerabilities_to_compare_list, jira_query = list_snyk_vulnerabilities(
+            vulnerabilities_to_compare_list, jira_query_list = list_snyk_vulnerabilities(
                 issue_set.issues, project.branch, project_name, file_name, jira_client)
             if vulnerabilities_to_compare_list:
                 process_vulnerabilities(
                     jira_client,
                     vulnerabilities_to_compare_list,
-                    jira_query,
+                    jira_query_list,
                     project.id,
                     project.organization.slug)
 
@@ -471,7 +484,7 @@ def process_projects(
 def process_vulnerabilities(
         jira_client: JiraClient,
         vulnerabilities_to_compare_list: [],
-        jira_query: str,
+        jira_query_list: [str],
         project_id: str,
         snyk_org_slug: str):
     load_more = True
@@ -480,7 +493,7 @@ def process_vulnerabilities(
     while load_more:
         # TODO fix paging functions
         jira_issues, load_more = jira_client.list_existing_jira_issues(
-            jira_query, start_at, max_results)
+             jira_query_list, start_at, max_results)
         vulnerabilities_to_create_list = compare_jira_snyk(
             vulnerabilities_to_compare_list,
             jira_issues,
