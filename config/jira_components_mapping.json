@@ -14,7 +14,7 @@
     "red-hat-data-services/trustyai-service-operator": "Model Explainability",
     "red-hat-data-services/modelmesh-serving": "Model Server and Metrics",
     "red-hat-data-services/odh-model-controller": "Model Server and Metrics",
-    "red-hat-data-services/codeflare-operator": "",
+    "red-hat-data-services/codeflare-operator": "Distributed Workloads",
     "red-hat-data-services/trustyai-explainability-python": "Model Explainability",
     "red-hat-data-services/caikit": "Model Serving Runtimes",
     "red-hat-data-services/modelmesh": "Model Server and Metrics",
@@ -25,6 +25,6 @@
     "red-hat-data-services/caikit-tgis-backend": "Model Serving Runtimes",
     "red-hat-data-services/caikit-nlp": "Model Serving Runtimes",
     "red-hat-data-services/caikit-tgis-serving": "Model Serving Runtimes",
-    "red-hat-data-services/kubeflow": "",
-    "red-hat-data-services/kuberay": ""
+    "red-hat-data-services/kubeflow": "IDE",
+    "red-hat-data-services/kuberay": "Distributed Workloads"
 }
