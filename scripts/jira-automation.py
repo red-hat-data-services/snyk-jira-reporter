@@ -119,7 +119,8 @@ class JiraClient:
                           "components": [{"name": vulnerability.get_component()}],
                           "duedate": vulnerability.calculate_due_date(),
                           "issuetype": {'name': 'Bug'},
-                          "labels": [vulnerability.get_jira_snyk_id()]}
+                          "labels": [vulnerability.get_jira_snyk_id(), 'Snyk']},
+            "securitylevel": {'name': 'Red Hat Employee'}
 
             jira_issues_to_create.append(jira_issue)
         if not self.is_dry_run():
