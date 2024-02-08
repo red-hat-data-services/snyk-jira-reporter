@@ -111,6 +111,8 @@ class JiraClient:
         """
         jira_issues_to_create = []
         for vulnerability in vulnerabilities_to_create:
+            labels = [vulnerability.get_jira_snyk_id(), 'Snyk']
+            labels += vulnerability.get_identifiers().get('CVE')
             jira_issue = {"project": jira_project_id,
                           "summary": vulnerability.get_jira_summary(),
                           "description": vulnerability.get_jira_description(
@@ -119,8 +121,8 @@ class JiraClient:
                           "components": [{"name": vulnerability.get_component()}],
                           "duedate": vulnerability.calculate_due_date(),
                           "issuetype": {'name': 'Bug'},
-                          "labels": [vulnerability.get_jira_snyk_id(), 'Snyk']},
-            "securitylevel": {'name': 'Red Hat Employee'}
+                          "securitylevel": {'name': 'Red Hat Employee'},
+                          "labels":labels},
 
             jira_issues_to_create.append(jira_issue)
         if not self.is_dry_run():
@@ -134,6 +136,7 @@ class JiraClient:
                 logging.error("failed to create jira issues")
         else:
             print(f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)")
+            print(jira_issues_to_create)
 
     def list_existing_jira_issues(
             self,
