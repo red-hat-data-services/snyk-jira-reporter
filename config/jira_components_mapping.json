@@ -26,5 +26,8 @@
     "red-hat-data-services/caikit-nlp": "Model Serving Runtimes",
     "red-hat-data-services/caikit-tgis-serving": "Model Serving Runtimes",
     "red-hat-data-services/kubeflow": "IDE",
-    "red-hat-data-services/kuberay": "Distributed Workloads"
+    "red-hat-data-services/kuberay": "Distributed Workloads",
+    "red-hat-data-services/data-science-pipelines-argo": "Pipelines",
+    "red-hat-data-services/argo-workflows": "Pipelines",
+    "red-hat-data-services/ml-metadata": "Model Registry"
 }
