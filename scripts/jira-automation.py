@@ -111,7 +111,7 @@ class JiraClient:
         """
         jira_issues_to_create = []
         for vulnerability in vulnerabilities_to_create:
-            labels = [vulnerability.get_jira_snyk_id(), 'Snyk']
+            labels = [vulnerability.get_jira_snyk_id(), 'snyk', 'cve', 'security']
             labels += vulnerability.get_identifiers().get('CVE')
             jira_issue = {"project": jira_project_id,
                           "summary": vulnerability.get_jira_summary(),
