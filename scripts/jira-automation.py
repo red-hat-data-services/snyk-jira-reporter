@@ -17,8 +17,7 @@ class SnykClient:
 
     def __init__(self, snyk_api_token: str):
         try:
-            self.__client = snyk.SnykClient(
-                snyk_api_token, tries=2, delay=1, backoff=2)
+            self.__client = snyk.SnykClient(snyk_api_token, tries=2, delay=1, backoff=2)
         except SystemError:
             logging.error("failed to create snyk client")
             sys.exit(1)
@@ -41,23 +40,23 @@ class JiraClient:
     __dry_run: bool
 
     def __init__(
-            self,
-            jira_server: str,
-            jira_api_token: str,
-            jira_label_prefix: str,
-            jira_project_id: str,
-            component_mapping: {},
-            dry_run: bool):
+        self,
+        jira_server: str,
+        jira_api_token: str,
+        jira_label_prefix: str,
+        jira_project_id: str,
+        component_mapping: {},
+        dry_run: bool,
+    ):
         try:
             self.__component_mapping = component_mapping
             self.__jira_label_prefix = jira_label_prefix
             self.__jira_project_id = jira_project_id
             self.__dry_run = dry_run
             self.__client = JIRA(
-                options={
-                    "server": jira_server,
-                    "verify": True},
-                token_auth=jira_api_token)
+                options={"server": jira_server, "verify": True},
+                token_auth=jira_api_token,
+            )
         except SystemError:
             logging.error("failed to create jira client")
             sys.exit(1)
@@ -96,11 +95,12 @@ class JiraClient:
         return self.__jira_label_prefix
 
     def create_jira_issues(
-            self,
-            vulnerabilities_to_create: [],
-            jira_project_id: str,
-            snyk_project_id: str,
-            snyk_org_slug: str):
+        self,
+        vulnerabilities_to_create: [],
+        jira_project_id: str,
+        snyk_project_id: str,
+        snyk_org_slug: str,
+    ):
         """
         creates new jira bugs from given list of vulnerabilities
 
@@ -111,38 +111,40 @@ class JiraClient:
         """
         jira_issues_to_create = []
         for vulnerability in vulnerabilities_to_create:
-            labels = [vulnerability.get_jira_snyk_id(), 'snyk', 'cve', 'security']
-            labels += vulnerability.get_identifiers().get('CVE')
-            jira_issue = {"project": jira_project_id,
-                          "summary": vulnerability.get_jira_summary(),
-                          "description": vulnerability.get_jira_description(
-                              snyk_org_slug,
-                              snyk_project_id),
-                          "components": [{"name": vulnerability.get_component()}],
-                          "duedate": vulnerability.calculate_due_date(),
-                          "issuetype": {'name': 'Bug'},
-                          "securitylevel": {'name': 'Red Hat Employee'},
-                          "labels":labels},
+            labels = [vulnerability.get_jira_snyk_id(), "snyk", "cve", "security"]
+            labels += vulnerability.get_identifiers().get("CVE")
+            jira_issue = (
+                {
+                    "project": jira_project_id,
+                    "summary": vulnerability.get_jira_summary(),
+                    "description": vulnerability.get_jira_description(
+                        snyk_org_slug, snyk_project_id
+                    ),
+                    "components": [{"name": vulnerability.get_component()}],
+                    "duedate": vulnerability.calculate_due_date(),
+                    "issuetype": {"name": "Bug"},
+                    "securitylevel": {"name": "Red Hat Employee"},
+                    "labels": labels,
+                },
+            )
 
             jira_issues_to_create.append(jira_issue)
         if not self.is_dry_run():
             try:
-                created_jira_issues = self.__client.create_issues(
-                    jira_issues_to_create)
+                created_jira_issues = self.__client.create_issues(jira_issues_to_create)
                 for issue in created_jira_issues:
-                    logging.info(
-                        f"Created JIRA issue key: {issue['issue']}")
+                    logging.info(f"Created JIRA issue key: {issue['issue']}")
             except SystemError:
                 logging.error("failed to create jira issues")
         else:
-            print(f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)")
+            print(
+                f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)"
+            )
             print(jira_issues_to_create)
 
     def list_existing_jira_issues(
-            self,
-            jira_query_list: [str],
-            start_at: int,
-            max_results: int) -> ([], bool):
+        self, jira_query_list: [str], start_at: int, max_results: int
+    ) -> ([], bool):
         """
         list all jira bugs with given JQL query
 
@@ -153,10 +155,11 @@ class JiraClient:
         """
         issues = {}
         for query in jira_query_list:
-            issues.update(self.__client.search_issues(
-            jql_str=query,
-            startAt=start_at,
-            maxResults=max_results))
+            issues.update(
+                self.__client.search_issues(
+                    jql_str=query, startAt=start_at, maxResults=max_results
+                )
+            )
         return issues, False
 
 
@@ -178,21 +181,22 @@ class VulnerabilityData:
     __identifiers: {}
 
     def __init__(
-            self,
-            snyk_id: str,
-            jira_snyk_id: str,
-            title: str,
-            url: str,
-            project_branch: str,
-            package_name: str,
-            package_version: [],
-            fixed_in: [],
-            project_name: str,
-            file_name: str,
-            component: str,
-            cvss_score: float,
-            identifiers: {},
-            severity: str):
+        self,
+        snyk_id: str,
+        jira_snyk_id: str,
+        title: str,
+        url: str,
+        project_branch: str,
+        package_name: str,
+        package_version: [],
+        fixed_in: [],
+        project_name: str,
+        file_name: str,
+        component: str,
+        cvss_score: float,
+        identifiers: {},
+        severity: str,
+    ):
         self.__id = snyk_id
         self.__jira_snyk_id = jira_snyk_id
         self.__title = title
@@ -338,10 +342,7 @@ class VulnerabilityData:
 
         return self.__project_branch
 
-    def get_jira_description(
-            self,
-            snyk_org_slug: str,
-            snyk_project_id: str) -> str:
+    def get_jira_description(self, snyk_org_slug: str, snyk_project_id: str) -> str:
         """
         returns jira description of the bug
 
@@ -350,42 +351,45 @@ class VulnerabilityData:
         :return: returns jira description of bug
         """
         cve = self.get_identifiers().get("CVE")
-        return f"Found vulnerability in *{self.get_project_name()}* project, in file *{self.get_file_path()}*, " \
-            f"in branch *{self.get_project_branch()}*. \n\n" \
-            f"Severity: {self.get_severity()}. \n\n" \
-            f"Package name: {self.get_package_name()} \n\n" \
-            f"Package version: {self.get_package_version()} \n\n" \
-            f"Fixed in: {self.get_fixed_in()} \n\n" \
-            f"Vulnerability URL: {self.get_url()}. \n\n" \
-            f"CSSV score: {self.get_cvss_score()}. \n\n" \
-            f"CVE Identifier: {cve}. \n\n" \
+        return (
+            f"Found vulnerability in *{self.get_project_name()}* project, in file *{self.get_file_path()}*, "
+            f"in branch *{self.get_project_branch()}*. \n\n"
+            f"Severity: {self.get_severity()}. \n\n"
+            f"Package name: {self.get_package_name()} \n\n"
+            f"Package version: {self.get_package_version()} \n\n"
+            f"Fixed in: {self.get_fixed_in()} \n\n"
+            f"Vulnerability URL: {self.get_url()}. \n\n"
+            f"CSSV score: {self.get_cvss_score()}. \n\n"
+            f"CVE Identifier: {cve}. \n\n"
             f"More info can be found in https://app.snyk.io/org/{snyk_org_slug}/project/{snyk_project_id}#issue-{self.get_id()}. \n"
+        )
 
     def get_jira_summary(self) -> str:
         cve = self.get_identifiers().get("CVE")
         summary = "Snyk - "
         if cve:
-             summary += f"[{cve[0]}] - "
+            summary += f"[{cve[0]}] - "
 
-        return summary + f"[{self.get_severity()}] - [{self.get_project_branch()}] - {self.get_project_name()} - " \
+        return (
+            summary
+            + f"[{self.get_severity()}] - [{self.get_project_branch()}] - {self.get_project_name()} - "
             f"{self.get_file_path()} - {self.get_title()}"
+        )
 
     def calculate_due_date(self) -> str:
         number_of_days = 30
         if self.get_severity() == "critical":
             number_of_days = 7
-        return (
-            datetime.today() +
-            timedelta(
-                days=number_of_days)).strftime('%Y-%m-%d')
+        return (datetime.today() + timedelta(days=number_of_days)).strftime("%Y-%m-%d")
 
 
 def list_snyk_vulnerabilities(
-        vulnerabilities: [],
-        project_branch: str,
-        project_name: str,
-        file_name: str,
-        jira_client: JiraClient) -> ([], str):
+    vulnerabilities: [],
+    project_branch: str,
+    project_name: str,
+    file_name: str,
+    jira_client: JiraClient,
+) -> ([], str):
     patchable_vulnerabilities = []
     jira_query = f"project={jira_client.get_project_id()} AND ("
     jira_query_list = []
@@ -401,7 +405,11 @@ def list_snyk_vulnerabilities(
                 jira_query = f"project={jira_client.get_project_id()} AND ("
             jira_snyk_id = f"{jira_client.get_jira_label_prefix()}{project_name}:{file_name}:{project_branch}:{vulnerability.id}"
             component_mapping = jira_client.get_component_mapping()
-            component = component_mapping[project_name] if project_name in component_mapping else ""
+            component = (
+                component_mapping[project_name]
+                if project_name in component_mapping
+                else ""
+            )
 
             vulnerability_obj = VulnerabilityData(
                 snyk_id=vulnerability.id,
@@ -417,11 +425,12 @@ def list_snyk_vulnerabilities(
                 component=component,
                 cvss_score=vulnerability.issueData.cvssScore,
                 identifiers=vulnerability.issueData.identifiers,
-                severity=vulnerability.issueData.severity)
+                severity=vulnerability.issueData.severity,
+            )
             patchable_vulnerabilities.append(vulnerability_obj)
 
-            jira_query += f" labels=\"{jira_snyk_id}\" OR"
-            label_counter+=1
+            jira_query += f' labels="{jira_snyk_id}" OR'
+            label_counter += 1
     # remove last OR operand from query
     jira_query = jira_query[:-2] + ")"
     jira_query_list.append(jira_query)
@@ -429,16 +438,14 @@ def list_snyk_vulnerabilities(
 
 
 def compare_jira_snyk(
-        vulnerabilities: [],
-        jira_issues: [],
-        jira_label_prefix: str) -> []:
+    vulnerabilities: [], jira_issues: [], jira_label_prefix: str
+) -> []:
     jira_issue_labels = set()
     for issue in jira_issues:
         for label in issue.fields.labels:
             if label.startswith(jira_label_prefix):
                 jira_issue_labels.add(label)
-    return [v for v in vulnerabilities if v.get_jira_snyk_id()
-            not in jira_issue_labels]
+    return [v for v in vulnerabilities if v.get_jira_snyk_id() not in jira_issue_labels]
 
 
 def parse_project_name(project_name: str, branch_name: str) -> str:
@@ -456,10 +463,7 @@ def exclude_file(file_name: str, excluded_files: dict) -> bool:
     return False
 
 
-def process_projects(
-        jira_client: JiraClient,
-        projects: [],
-        exclude_files: dict):
+def process_projects(jira_client: JiraClient, projects: [], exclude_files: dict):
     for project in projects:
         project_name = parse_project_name(project.name, project.branch)
         file_name = parse_file_name(project.name)
@@ -467,47 +471,61 @@ def process_projects(
         excluded_files = exclude_files.get(project_name, None)
         if excluded_files and exclude_file(file_name, excluded_files):
             logging.info(
-                f"skipping file {file_name}, because of the record in exclude_file.json")
+                f"skipping file {file_name}, because of the record in exclude_file.json"
+            )
             continue
 
         issue_set = project.issueset_aggregated.all()
         if issue_set.issues:
             logging.info(
-                f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}")
-            vulnerabilities_to_compare_list, jira_query_list = list_snyk_vulnerabilities(
-                issue_set.issues, project.branch, project_name, file_name, jira_client)
+                f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}"
+            )
+            vulnerabilities_to_compare_list, jira_query_list = (
+                list_snyk_vulnerabilities(
+                    issue_set.issues,
+                    project.branch,
+                    project_name,
+                    file_name,
+                    jira_client,
+                )
+            )
             if vulnerabilities_to_compare_list:
                 process_vulnerabilities(
                     jira_client,
                     vulnerabilities_to_compare_list,
                     jira_query_list,
                     project.id,
-                    project.organization.slug)
+                    project.organization.slug,
+                )
 
 
 def process_vulnerabilities(
-        jira_client: JiraClient,
-        vulnerabilities_to_compare_list: [],
-        jira_query_list: [str],
-        project_id: str,
-        snyk_org_slug: str):
+    jira_client: JiraClient,
+    vulnerabilities_to_compare_list: [],
+    jira_query_list: [str],
+    project_id: str,
+    snyk_org_slug: str,
+):
     load_more = True
     start_at = 0
     max_results = 50
     while load_more:
         # TODO fix paging functions
         jira_issues, load_more = jira_client.list_existing_jira_issues(
-             jira_query_list, start_at, max_results)
+            jira_query_list, start_at, max_results
+        )
         vulnerabilities_to_create_list = compare_jira_snyk(
             vulnerabilities_to_compare_list,
             jira_issues,
-            jira_client.get_jira_label_prefix())
+            jira_client.get_jira_label_prefix(),
+        )
         if vulnerabilities_to_create_list:
             jira_client.create_jira_issues(
                 vulnerabilities_to_create_list,
                 jira_client.get_project_id(),
                 project_id,
-                snyk_org_slug)
+                snyk_org_slug,
+            )
             start_at += max_results
 
 
@@ -534,15 +552,19 @@ def load_mapping(file_path: str) -> {}:
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    jira_component_mapping_file_path = os.environ.get("COMPONENT_MAPPING_FILE_PATH") if os.environ.get(
-        "COMPONENT_MAPPING_FILE_PATH") else "../config/jira_components_mapping.json"
-    components_mapping = load_mapping(
-        jira_component_mapping_file_path)
+    jira_component_mapping_file_path = (
+        os.environ.get("COMPONENT_MAPPING_FILE_PATH")
+        if os.environ.get("COMPONENT_MAPPING_FILE_PATH")
+        else "../config/jira_components_mapping.json"
+    )
+    components_mapping = load_mapping(jira_component_mapping_file_path)
 
-    exclude_files_file_path = os.environ.get("EXCLUDE_FILES_FILE_PATH") if os.environ.get(
-        "EXCLUDE_FILES_FILE_PATH") else "../config/exclude_files.json"
-    exclude_files_mapping = load_mapping(
-        exclude_files_file_path)
+    exclude_files_file_path = (
+        os.environ.get("EXCLUDE_FILES_FILE_PATH")
+        if os.environ.get("EXCLUDE_FILES_FILE_PATH")
+        else "../config/exclude_files.json"
+    )
+    exclude_files_mapping = load_mapping(exclude_files_file_path)
 
     snyk_org_id = os.environ.get("SNYK_ORG_ID")
     if not snyk_org_id:
@@ -565,9 +587,12 @@ def main():
         logging.error("JIRA_PROJECT_ID env variable not defined")
         sys.exit(2)
 
-    jira_label_prefix = os.environ.get("JIRA_LABEL_PREFIX") if os.environ.get(
-        "JIRA_LABEL_PREFIX") else "snyk-jira-integration:"
-    
+    jira_label_prefix = (
+        os.environ.get("JIRA_LABEL_PREFIX")
+        if os.environ.get("JIRA_LABEL_PREFIX")
+        else "snyk-jira-integration:"
+    )
+
     dry_run = os.environ.get("DRY_RUN")
     if dry_run:
         logging.info("DRY_RUN is enabled")
@@ -581,7 +606,8 @@ def main():
         jira_label_prefix,
         jira_project_id,
         components_mapping,
-        dry_run)
+        dry_run,
+    )
     process_projects(jira_client, projects, exclude_files_mapping)
 
 
