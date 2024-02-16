@@ -5,6 +5,7 @@ import re
 import snyk
 import sys
 import requests
+import argparse
 
 from jira import JIRA
 from dataclasses import dataclass
@@ -14,8 +15,10 @@ from models import AggregatedIssue, IssueData, FixInfo
 VULNERABILITY_SEVERITIES = ["critical", "high", "medium"]
 ALLOWED_DEPS = ["pip", "gomodules", "npm", "yarn", "poetry", "maven"]
 
+
 class SnykClient:
     __client: snyk.SnykClient
+
 
     def __init__(self, snyk_api_token: str):
         try:
@@ -23,6 +26,7 @@ class SnykClient:
         except SystemError:
             logging.error("failed to create snyk client")
             sys.exit(1)
+
 
     def get_organization(self, org_id: str) -> {}:
         """
@@ -33,8 +37,14 @@ class SnykClient:
         """
         return self.__client.organizations.get(org_id)
 
+
     def get_code_analysis_results(
-        self, project_id: str, snyk_org_id: str, snyk_api_token: str
+        self, 
+        project_id: str, 
+        snyk_org_id: str, 
+        snyk_api_token: str,
+        snyk_api_result_limit: str,
+        snyk_rest_api_version: str
     ):
         results = []
         headers = {
@@ -43,8 +53,8 @@ class SnykClient:
         }
 
         params = {
-            "version": "2024-01-23",
-            "limit": "100",
+            "version": snyk_rest_api_version,
+            "limit": snyk_api_result_limit,
             "scan_item.id": project_id,
             "scan_item.type": "project",
             "type": "code",
@@ -70,6 +80,7 @@ class SnykClient:
                 raise SystemExit(e)
 
         return results
+
 
     def format_code_analysis_results(self, code_analysis_list, project_id):
         formatted_list = []
@@ -121,6 +132,7 @@ class JiraClient:
     __component_mapping: {}
     __dry_run: bool
 
+
     def __init__(
         self,
         jira_server: str,
@@ -143,6 +155,7 @@ class JiraClient:
             logging.error("failed to create jira client")
             sys.exit(1)
 
+
     def is_dry_run(self) -> bool:
         """
         returns if it is dry run. Jira issues will not be created if true
@@ -150,6 +163,7 @@ class JiraClient:
         :return: dry run
         """
         return self.__dry_run
+
 
     def get_project_id(self) -> str:
         """
@@ -159,6 +173,7 @@ class JiraClient:
         """
         return self.__jira_project_id
 
+
     def get_component_mapping(self) -> {}:
         """
         returns dict with mapping between github repositories and jira components
@@ -166,6 +181,7 @@ class JiraClient:
         :return: mapping between github repositories and jira components
         """
         return self.__component_mapping
+
 
     def get_jira_label_prefix(self) -> str:
         """
@@ -176,6 +192,7 @@ class JiraClient:
         """
         return self.__jira_label_prefix
 
+
     def create_labels(self, vulnerability):
         labels = [vulnerability.get_jira_snyk_id(), "snyk", "security"]
         identifiers = vulnerability.get_identifiers()
@@ -185,7 +202,10 @@ class JiraClient:
         if "CWE" in identifiers and len(identifiers["CWE"]) > 0:
             labels.append("cwe")
             labels += vulnerability.get_identifiers().get("CWE")
+        if not len(identifiers["CVE"]) and not len(identifiers["CWE"]):
+            label.append("vuln")
         return labels
+
 
     def create_jira_issues(
         self,
@@ -232,6 +252,9 @@ class JiraClient:
             print(
                 f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)"
             )
+            for jira in jira_issues_to_create:
+                print(jira[0]["summary"])
+
 
     def list_existing_jira_issues(
         self, jira_query_list: [str], start_at: int, max_results: int
@@ -303,6 +326,7 @@ class VulnerabilityData:
         self.__identifiers = identifiers
         self.__severity = severity
 
+
     def get_id(self):
         """
         returns snyk ID of vulnerability e.g. SNYK-UBUNTU1404-OPENSSL-2426359
@@ -310,6 +334,7 @@ class VulnerabilityData:
         :return: snyk ID
         """
         return self.__id
+
 
     def get_jira_snyk_id(self):
         """
@@ -325,6 +350,7 @@ class VulnerabilityData:
 
         return self.__jira_snyk_id
 
+
     def get_title(self) -> str:
         """
         returns jira bug title
@@ -333,6 +359,7 @@ class VulnerabilityData:
         """
 
         return self.__title
+
 
     def get_url(self) -> str:
         """
@@ -343,6 +370,7 @@ class VulnerabilityData:
 
         return self.__url
 
+
     def get_package_name(self) -> str:
         """
         returns golang package name where vulnerability is
@@ -351,6 +379,7 @@ class VulnerabilityData:
         """
 
         return self.__package_name
+
 
     def get_identifiers(self) -> {}:
         """
@@ -361,6 +390,7 @@ class VulnerabilityData:
 
         return self.__identifiers
 
+
     def get_cvss_score(self) -> float:
         """
         returns cvss score
@@ -369,6 +399,7 @@ class VulnerabilityData:
         """
 
         return self.__cvss_score
+
 
     def get_package_version(self) -> []:
         """
@@ -379,6 +410,7 @@ class VulnerabilityData:
 
         return self.__package_version
 
+
     def get_fixed_in(self) -> []:
         """
         returns versions in which vulnerability is fixed
@@ -387,6 +419,7 @@ class VulnerabilityData:
         """
 
         return self.__fixed_in
+
 
     def get_project_name(self) -> str:
         """
@@ -397,6 +430,7 @@ class VulnerabilityData:
 
         return self.__project_name
 
+
     def get_file_path(self) -> str:
         """
         returns file path, where snyk found vulnerability
@@ -405,6 +439,7 @@ class VulnerabilityData:
         """
 
         return self.__file_path
+
 
     def get_component(self) -> str:
         """
@@ -415,6 +450,7 @@ class VulnerabilityData:
 
         return self.__component
 
+
     def get_severity(self) -> str:
         """
         returns severity of vulnerability
@@ -424,6 +460,7 @@ class VulnerabilityData:
 
         return self.__severity
 
+
     def get_project_branch(self) -> str:
         """
         returns branch name where the vulnerability was found
@@ -432,6 +469,7 @@ class VulnerabilityData:
         """
 
         return self.__project_branch
+
 
     def get_jira_description(self, snyk_org_slug: str, snyk_project_id: str) -> str:
         """
@@ -457,6 +495,7 @@ class VulnerabilityData:
             f"More info can be found in https://app.snyk.io/org/{snyk_org_slug}/project/{snyk_project_id}#issue-{self.get_id()}. \n"
         )
 
+
     def get_jira_summary(self) -> str:
         cve = self.get_identifiers().get("CVE")
         cwe = self.get_identifiers().get("CWE")
@@ -470,6 +509,7 @@ class VulnerabilityData:
             + f"[{self.get_severity()}] - [{self.get_project_branch()}] - {self.get_project_name()} - "
             f"{self.get_file_path()} - {self.get_title()}"
         )
+
 
     def calculate_due_date(self) -> str:
         number_of_days = 30
@@ -567,6 +607,8 @@ def process_projects(
     snyk_api_token: str,
     projects: [],
     exclude_files: dict,
+    snyk_api_result_limit,
+    snyk_rest_api_version
 ):
     for project in projects:
         project_name = parse_project_name(project.name, project.branch)
@@ -582,7 +624,11 @@ def process_projects(
         issues_to_process = []
         if project.type == "sast":
             code_analysis_list = snyk_client.get_code_analysis_results(
-                project.id, snyk_org_id, snyk_api_token
+                project.id, 
+                snyk_org_id, 
+                snyk_api_token, 
+                snyk_api_result_limit, 
+                snyk_rest_api_version
             )
             processed_list = snyk_client.format_code_analysis_results(
                 code_analysis_list, project.id
@@ -711,6 +757,17 @@ def main():
     if dry_run:
         logging.info("DRY_RUN is enabled")
 
+    parser = argparse.ArgumentParser(description='Snyk to Jira automation script')
+    parser.add_argument("-l", "--limit", type=str, help="The number of results to be returned by the snyk scan")
+    parser.add_argument("-v", "--version", type=str, help="The rest api version of snyk")
+    args = parser.parse_args()
+    snyk_api_result_limit = "100"
+    if args.limit:
+        snyk_api_result_limit = args.limit
+    snyk_rest_api_version = "2024-01-23"
+    if args.version:
+        snyk_rest_api_version = args.version
+             
     snyk_client = SnykClient(snyk_api_token)
     snyk_org = snyk_client.get_organization(snyk_org_id)
     projects = snyk_org.projects.all()
@@ -729,6 +786,8 @@ def main():
         snyk_api_token,
         projects,
         exclude_files_mapping,
+        snyk_api_result_limit,
+        snyk_rest_api_version
     )
 
 
