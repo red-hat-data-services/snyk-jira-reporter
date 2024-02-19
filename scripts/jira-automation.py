@@ -512,9 +512,13 @@ class VulnerabilityData:
 
 
     def calculate_due_date(self) -> str:
-        number_of_days = 30
+        number_of_days = 0
         if self.get_severity() == "critical":
-            number_of_days = 7
+            number_of_days = 30
+        elif self.get_severity() == "high":
+            number_of_days = 60
+        elif self.get_severity() == "medium":
+            number_of_days = 90
         return (datetime.today() + timedelta(days=number_of_days)).strftime("%Y-%m-%d")
 
 
