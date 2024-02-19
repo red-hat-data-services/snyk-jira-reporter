@@ -203,7 +203,7 @@ class JiraClient:
             labels.append("cwe")
             labels += vulnerability.get_identifiers().get("CWE")
         if not len(identifiers["CVE"]) and not len(identifiers["CWE"]):
-            label.append("vuln")
+            labels.append("vuln")
         return labels
 
 
