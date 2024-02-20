@@ -264,7 +264,7 @@ if __name__ == "__main__":
         type=str,
         help="The number of results to be returned by the snyk scan",
         nargs="?",
-        const="100",
+        default="100",
     )
     parser.add_argument(
         "-v",
@@ -272,7 +272,7 @@ if __name__ == "__main__":
         type=str,
         help="The rest api version of snyk",
         nargs="?",
-        const="2024-01-23",
+        default="2024-01-23",
     )
     args = parser.parse_args()
     main(args)
