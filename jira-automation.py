@@ -116,6 +116,7 @@ def process_projects(
     exclude_files: dict,
     snyk_api_result_limit,
     snyk_rest_api_version,
+    disable_dep_analysis,
 ):
     for project in projects:
         project_name = parse_project_name(project.name, project.branch)
@@ -141,7 +142,7 @@ def process_projects(
                 code_analysis_list, project.id
             )
             issues_to_process += processed_list
-        if project.type in ALLOWED_DEPS:
+        if project.type in ALLOWED_DEPS and (not disable_dep_analysis):
             issues_to_process += issue_set.issues
         if issues_to_process:
             logging.info(
@@ -253,6 +254,7 @@ def main(args):
         exclude_files_mapping,
         args.limit,
         args.version,
+        args.disable_dep_analysis,
     )
 
 
@@ -273,6 +275,10 @@ if __name__ == "__main__":
         help="The rest api version of snyk",
         nargs="?",
         default="2024-01-23",
+    )
+
+    parser.add_argument(
+        "--disable-dep-analysis", action="store_true", dest="disable_dep_analysis"
     )
     args = parser.parse_args()
     main(args)
