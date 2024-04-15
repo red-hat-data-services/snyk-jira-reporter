@@ -6,6 +6,7 @@ import snyk
 import logging
 from jira import JIRA
 import time
+
 import utils.utils as utils
 
 
@@ -398,6 +399,7 @@ class JiraClient:
                     "issuetype": {"name": "Bug"},
                     "securitylevel": {"name": "Red Hat Employee"},
                     "labels": labels,
+                    "priority": "Critical",
                 },
             )
 
@@ -434,5 +436,5 @@ class JiraClient:
                     jql_str=query, startAt=start_at, maxResults=max_results
                 )
             )
-            time.sleep(10)
+            time.sleep(30)
         return issues, False
