@@ -13,7 +13,7 @@ env:
   # SNYK envs
   SNYK_ORG_ID: ed870ef2-8f76-4ea1-ad4b-dacfa225eb69 # refers to the RHOAI org in Snyk
   #other envs
-  DRY_RUN: true # to be removed later
+  DRY_RUN: false
 
 jobs:
   jira-snyk-reporter-job:
