@@ -434,5 +434,5 @@ class JiraClient:
                     jql_str=query, startAt=start_at, maxResults=max_results
                 )
             )
-            time.sleep(30)
+            time.sleep(10)
         return issues, False
