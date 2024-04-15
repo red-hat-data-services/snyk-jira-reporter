@@ -5,7 +5,7 @@ from typing import Any, List, Optional
 import snyk
 import logging
 from jira import JIRA
-
+import time
 import utils.utils as utils
 
 
@@ -434,4 +434,5 @@ class JiraClient:
                     jql_str=query, startAt=start_at, maxResults=max_results
                 )
             )
+            time.sleep(30)
         return issues, False
