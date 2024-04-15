@@ -232,8 +232,11 @@ def main(args):
     )
 
     dry_run = os.environ.get("DRY_RUN")
-    if dry_run:
+    if dry_run == "true":
         logging.info("DRY_RUN is enabled")
+        dry_run = True
+    else:
+        dry_run = False
 
     snyk_client = SnykClient(snyk_api_token)
     snyk_org = snyk_client.get_organization(snyk_org_id)
