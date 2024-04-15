@@ -33,4 +33,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: execute py script for automation 
-        run: python jira-automation.py --disable-dep-analysis
+        run: python jira-automation.py
