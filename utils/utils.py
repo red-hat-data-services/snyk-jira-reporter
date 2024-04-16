@@ -101,7 +101,18 @@ def create_labels(vulnerability):
         labels += vulnerability.get_identifiers().get("CWE")
     if not len(identifiers["CVE"]) and not len(identifiers["CWE"]):
         labels.append("vuln")
+    if vulnerability.get_issue_type() == "code":
+        labels.append("code-analysis")
+    if vulnerability.get_issue_type() == "vuln":
+        labels.append("dependency")
     return labels
+
+
+def get_jira_priority(severity: str) -> {}:
+    if severity == "critical" or severity == "high":
+        return {"name": "Critical"}
+    if severity == "medium":
+        return {"name": "Normal"}
 
 
 def parse_project_name(project_name: str, branch_name: str) -> str:

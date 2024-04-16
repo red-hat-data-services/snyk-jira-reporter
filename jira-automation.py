@@ -7,7 +7,7 @@ import argparse
 from utils.utils import *
 from models.models import *
 
-VULNERABILITY_SEVERITIES = ["critical", "high", "medium"]
+VULNERABILITY_SEVERITIES = ["critical", "high"]
 ALLOWED_DEPS = ["pip", "gomodules", "npm", "yarn", "poetry", "maven"]
 
 
@@ -49,7 +49,6 @@ def list_snyk_vulnerabilities(
                 if project_name in component_mapping
                 else ""
             )
-
             vulnerability_obj = VulnerabilityData(
                 snyk_id=vulnerability.id,
                 jira_snyk_id=jira_snyk_id,
@@ -65,6 +64,7 @@ def list_snyk_vulnerabilities(
                 cvss_score=vulnerability.issueData.cvssScore,
                 identifiers=vulnerability.issueData.identifiers,
                 severity=vulnerability.issueData.severity,
+                issue_type=vulnerability.issueType,
             )
             patchable_vulnerabilities.append(vulnerability_obj)
 

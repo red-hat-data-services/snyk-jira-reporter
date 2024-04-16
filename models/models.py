@@ -6,7 +6,7 @@ import snyk
 import logging
 from jira import JIRA
 import time
-
+import json
 import utils.utils as utils
 
 
@@ -75,6 +75,7 @@ class VulnerabilityData:
     __severity: str
     __cvss_score: float
     __identifiers: {}
+    __issue_type: str
 
     def __init__(
         self,
@@ -92,6 +93,7 @@ class VulnerabilityData:
         cvss_score: float,
         identifiers: {},
         severity: str,
+        issue_type: str,
     ):
         self.__id = snyk_id
         self.__jira_snyk_id = jira_snyk_id
@@ -107,6 +109,7 @@ class VulnerabilityData:
         self.__cvss_score = cvss_score
         self.__identifiers = identifiers
         self.__severity = severity
+        self.__issue_type = issue_type
 
     def get_id(self):
         """
@@ -228,6 +231,15 @@ class VulnerabilityData:
         """
 
         return self.__severity
+
+    def get_issue_type(self) -> str:
+        """
+        returns issue type of vulnerability
+
+        :return: returns issue type of vulnerability
+        """
+
+        return self.__issue_type
 
     def get_project_branch(self) -> str:
         """
@@ -399,7 +411,7 @@ class JiraClient:
                     "duedate": vulnerability.calculate_due_date(),
                     "security": {"id": "11697"},
                     "labels": labels,
-                    "priority": {"name": "Critical"},
+                    "priority": utils.get_jira_priority(vulnerability.get_severity()),
                 }
             )
         if not self.is_dry_run():
@@ -413,8 +425,8 @@ class JiraClient:
             print(
                 f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)"
             )
-            for jira in jira_issues_to_create:
-                print(jira[0]["summary"])
+            for jira in jira_issues_to_create or []:
+                print(jira["summary"])
 
     def list_existing_jira_issues(
         self, jira_query_list: [str], start_at: int, max_results: int
