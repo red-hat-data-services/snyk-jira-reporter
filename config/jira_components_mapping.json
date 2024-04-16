@@ -29,5 +29,6 @@
     "red-hat-data-services/kuberay": "Distributed Workloads",
     "red-hat-data-services/data-science-pipelines-argo": "Pipelines",
     "red-hat-data-services/argo-workflows": "Pipelines",
-    "red-hat-data-services/ml-metadata": "Model Registry"
+    "red-hat-data-services/ml-metadata": "Model Registry",
+    "red-hat-data-services/training-operator": "Distributed Workloads"
 }
