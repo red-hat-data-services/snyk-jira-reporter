@@ -397,7 +397,7 @@ class JiraClient:
                     "issuetype": {"name": "Bug"},
                     "components": [{"name": vulnerability.get_component()}],
                     "duedate": vulnerability.calculate_due_date(),
-                    # "securitylevel": {"name": "Red Hat Employee"},
+                    "security": {"id": "11697"},
                     "labels": labels,
                     "priority": {"name": "Critical"},
                 }
