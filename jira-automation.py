@@ -12,14 +12,13 @@ ALLOWED_DEPS = ["pip", "gomodules", "npm", "yarn", "poetry", "maven"]
 
 
 def compare_jira_snyk(
-    vulnerabilities: [], jira_issues: {}, jira_label_prefix: str
+    vulnerabilities: [], jira_issues: [], jira_label_prefix: str
 ) -> []:
     jira_issue_labels = set()
-    for issue in jira_issues or {}:
-        if issue:
-            for label in issue.fields.labels:
-                if label.startswith(jira_label_prefix):
-                    jira_issue_labels.add(label)
+    for issue in jira_issues or []:
+        for label in issue["fields"]["labels"]:
+            if label.startswith(jira_label_prefix):
+                jira_issue_labels.add(label)
     return [v for v in vulnerabilities if v.get_jira_snyk_id() not in jira_issue_labels]
 
 
