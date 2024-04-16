@@ -109,10 +109,14 @@ def create_labels(vulnerability):
 
 
 def get_jira_priority(severity: str) -> {}:
-    if severity == "critical" or severity == "high":
+    if severity == "critical":
         return {"name": "Critical"}
+    if severity == "high":
+        return {"name": "Major"}
     if severity == "medium":
         return {"name": "Normal"}
+    if severity == "low":
+        return {"name": "Minor"}
 
 
 def parse_project_name(project_name: str, branch_name: str) -> str:
