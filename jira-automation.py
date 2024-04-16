@@ -37,7 +37,7 @@ def list_snyk_vulnerabilities(
     for vulnerability in vulnerabilities:
         if vulnerability.issueData.severity in VULNERABILITY_SEVERITIES:
             # split logic if the request header it too big
-            if label_counter > 10:
+            if label_counter > 20:
                 label_counter = 0
                 # remove last OR operand from query
                 jira_query = jira_query[:-2] + ")"
@@ -240,7 +240,7 @@ def main(args):
 
     snyk_client = SnykClient(snyk_api_token)
     snyk_org = snyk_client.get_organization(snyk_org_id)
-    projects = snyk_org.projects.all()
+    projects = snyk_org.projects.get("570fd96f-09ad-488b-bb37-f822c34c973f")
     jira_client = JiraClient(
         jira_server,
         jira_api_token,
@@ -253,7 +253,7 @@ def main(args):
         jira_client,
         snyk_org_id,
         snyk_api_token,
-        projects,
+        [projects],
         exclude_files_mapping,
         args.limit,
         args.version,
