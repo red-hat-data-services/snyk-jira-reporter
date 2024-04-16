@@ -402,8 +402,6 @@ class JiraClient:
                     "priority": {"name": "Critical"},
                 }
             )
-        for jira in jira_issues_to_create:
-            print(jira[0]["summary"])
         if not self.is_dry_run():
             try:
                 created_jira_issues = self.__client.create_issues(jira_issues_to_create)
@@ -415,6 +413,8 @@ class JiraClient:
             print(
                 f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)"
             )
+            for jira in jira_issues_to_create:
+                print(jira[0]["summary"])
 
     def list_existing_jira_issues(
         self, jira_query_list: [str], start_at: int, max_results: int
