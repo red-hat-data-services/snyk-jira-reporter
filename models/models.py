@@ -387,22 +387,23 @@ class JiraClient:
         jira_issues_to_create = []
         for vulnerability in vulnerabilities_to_create:
             labels = utils.create_labels(vulnerability)
-            jira_issue = (
+            jira_issues_to_create.append(
                 {
                     "project": jira_project_id,
                     "summary": vulnerability.get_jira_summary(),
                     "description": vulnerability.get_jira_description(
                         snyk_org_slug, snyk_project_id
                     ),
+                    "issuetype": {"name": "Bug"},
                     "components": [{"name": vulnerability.get_component()}],
                     "duedate": vulnerability.calculate_due_date(),
-                    "issuetype": {"name": "Bug"},
-                    "securitylevel": {"name": "Red Hat Employee"},
+                    # "securitylevel": {"name": "Red Hat Employee"},
                     "labels": labels,
-                },
+                    "priority": {"name": "Critical"},
+                }
             )
-
-            jira_issues_to_create.append(jira_issue)
+        for jira in jira_issues_to_create:
+            print(jira[0]["summary"])
         if not self.is_dry_run():
             try:
                 created_jira_issues = self.__client.create_issues(jira_issues_to_create)
@@ -414,8 +415,6 @@ class JiraClient:
             print(
                 f"dry run. No issues created. ({len(jira_issues_to_create)} issues would be created)"
             )
-            for jira in jira_issues_to_create:
-                print(jira[0]["summary"])
 
     def list_existing_jira_issues(
         self, jira_query_list: [str], start_at: int, max_results: int
@@ -428,12 +427,14 @@ class JiraClient:
         :param max_results: number of results jira should return
         :return: list of jira bugs, boolean, if there are any more results
         """
-        issues = {}
+        issues = []
         for query in jira_query_list or []:
-            issues.update(
-                self.__client.search_issues(
-                    jql_str=query, startAt=start_at, maxResults=max_results
-                )
+            issue = self.__client.search_issues(
+                jql_str=query,
+                startAt=start_at,
+                maxResults=max_results,
+                json_result=True,
             )
+            issues.append(issue["issues"])
             time.sleep(10)
-        return issues, False
+        return [item for issue in issues for item in issue], False
