@@ -6,7 +6,7 @@ import snyk
 import logging
 from jira import JIRA
 import time
-import json
+
 import utils.utils as utils
 
 
