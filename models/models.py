@@ -408,7 +408,6 @@ class JiraClient:
                     ),
                     "issuetype": {"name": "Bug"},
                     "components": [{"name": vulnerability.get_component()}],
-                    "duedate": vulnerability.calculate_due_date(),
                     "security": {"id": "11697"},
                     "labels": labels,
                     "priority": utils.get_jira_priority(vulnerability.get_severity()),
