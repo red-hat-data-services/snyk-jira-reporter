@@ -239,7 +239,7 @@ def main(args):
 
     snyk_client = SnykClient(snyk_api_token)
     snyk_org = snyk_client.get_organization(snyk_org_id)
-    projects = snyk_org.projects.get("570fd96f-09ad-488b-bb37-f822c34c973f")
+    projects = snyk_org.projects.all()
     jira_client = JiraClient(
         jira_server,
         jira_api_token,
@@ -252,7 +252,7 @@ def main(args):
         jira_client,
         snyk_org_id,
         snyk_api_token,
-        [projects],
+        projects,
         exclude_files_mapping,
         args.limit,
         args.version,
