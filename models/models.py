@@ -261,9 +261,9 @@ class VulnerabilityData:
         cve = self.get_identifiers().get("CVE")
         cwe = self.get_identifiers().get("CWE")
         return (
-            f"!!Do not edit this section below!!\n\n"
+            f"##Do not edit this section below##\n\n"
             f"##snyk-jira-uid##{self.get_jira_snyk_id()} \n\n"
-            f"!!Do not edit this section above!!\n\n"
+            f"##Do not edit this section above##\n\n"
             f"Found vulnerability in *{self.get_project_name()}* project, in file *{self.get_file_path()}*, \n\n"
             f"in branch *{self.get_project_branch()}*. \n\n"
             f"Severity: {self.get_severity()}. \n\n"
