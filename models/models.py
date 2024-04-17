@@ -261,7 +261,10 @@ class VulnerabilityData:
         cve = self.get_identifiers().get("CVE")
         cwe = self.get_identifiers().get("CWE")
         return (
-            f"Found vulnerability in *{self.get_project_name()}* project, in file *{self.get_file_path()}*, "
+            f"!!Do not edit this section below!!\n\n"
+            f"##snyk-jira-uid##{self.get_jira_snyk_id()} \n\n"
+            f"!!Do not edit this section above!!\n\n"
+            f"Found vulnerability in *{self.get_project_name()}* project, in file *{self.get_file_path()}*, \n\n"
             f"in branch *{self.get_project_branch()}*. \n\n"
             f"Severity: {self.get_severity()}. \n\n"
             f"Package name: {self.get_package_name()} \n\n"
@@ -438,7 +441,7 @@ class JiraClient:
         :param max_results: number of results jira should return
         :return: list of jira bugs, boolean, if there are any more results
         """
-        issues = []
+        uid_arr = []
         for query in jira_query_list or []:
             issue = self.__client.search_issues(
                 jql_str=query,
@@ -446,6 +449,13 @@ class JiraClient:
                 maxResults=max_results,
                 json_result=True,
             )
-            issues.append(issue["issues"])
+            for jira_issue in issue["issues"]:
+                description = jira_issue["fields"]["description"]
+                split_arr = description.split("\n")
+                index = [
+                    idx for idx, s in enumerate(split_arr) if "##snyk-jira-uid##" in s
+                ][0]
+                snyk_jira_uid = split_arr[index][17:].strip()
+                uid_arr.append(snyk_jira_uid)
             time.sleep(10)
-        return [item for issue in issues for item in issue], False
+        return uid_arr, False

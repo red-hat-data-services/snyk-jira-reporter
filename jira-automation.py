@@ -11,14 +11,8 @@ VULNERABILITY_SEVERITIES = ["critical", "high"]
 ALLOWED_DEPS = ["pip", "gomodules", "npm", "yarn", "poetry", "maven"]
 
 
-def compare_jira_snyk(
-    vulnerabilities: [], jira_issues: [], jira_label_prefix: str
-) -> []:
-    jira_issue_labels = set()
-    for issue in jira_issues or []:
-        for label in issue["fields"]["labels"]:
-            if label.startswith(jira_label_prefix):
-                jira_issue_labels.add(label)
+def compare_jira_snyk(vulnerabilities: [], uid_list: []) -> []:
+    jira_issue_labels = set(uid_list)
     return [v for v in vulnerabilities if v.get_jira_snyk_id() not in jira_issue_labels]
 
 
@@ -68,7 +62,7 @@ def list_snyk_vulnerabilities(
             )
             patchable_vulnerabilities.append(vulnerability_obj)
 
-            jira_query += f' labels="{jira_snyk_id}" OR'
+            jira_query += f' description~"{jira_snyk_id}" OR'
             label_counter += 1
     if not jira_query.endswith("AND ("):
         # remove last OR operand from query
@@ -89,13 +83,12 @@ def process_vulnerabilities(
     max_results = 50
     while load_more:
         # TODO fix paging functions
-        jira_issues, load_more = jira_client.list_existing_jira_issues(
+        uid_list, load_more = jira_client.list_existing_jira_issues(
             jira_query_list, start_at, max_results
         )
         vulnerabilities_to_create_list = compare_jira_snyk(
             vulnerabilities_to_compare_list,
-            jira_issues,
-            jira_client.get_jira_label_prefix(),
+            uid_list,
         )
         if vulnerabilities_to_create_list:
             jira_client.create_jira_issues(
@@ -117,6 +110,7 @@ def process_projects(
     snyk_rest_api_version,
     disable_dep_analysis,
 ):
+
     for project in projects:
         project_name = parse_project_name(project.name, project.branch)
         file_name = parse_file_name(project.name)
@@ -144,6 +138,7 @@ def process_projects(
         if project.type in ALLOWED_DEPS and (not disable_dep_analysis):
             issues_to_process += issue_set.issues
         if issues_to_process:
+            count += len(issues_to_process)
             logging.info(
                 f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}"
             )
