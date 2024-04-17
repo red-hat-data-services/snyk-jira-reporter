@@ -91,7 +91,7 @@ def format_code_analysis_results(code_analysis_list, project_id):
 
 
 def create_labels(vulnerability):
-    labels = [vulnerability.get_jira_snyk_id(), "snyk", "security"]
+    labels = ["snyk", "security"]
     identifiers = vulnerability.get_identifiers()
     if "CVE" in identifiers and len(identifiers["CVE"]) > 0:
         labels.append("cve")
