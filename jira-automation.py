@@ -138,7 +138,6 @@ def process_projects(
         if project.type in ALLOWED_DEPS and (not disable_dep_analysis):
             issues_to_process += issue_set.issues
         if issues_to_process:
-            count += len(issues_to_process)
             logging.info(
                 f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}"
             )
