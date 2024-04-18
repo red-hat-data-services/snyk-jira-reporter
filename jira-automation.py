@@ -30,7 +30,7 @@ def list_snyk_vulnerabilities(
     for vulnerability in vulnerabilities:
         if vulnerability.issueData.severity in VULNERABILITY_SEVERITIES:
             # split logic if the request header it too big
-            if label_counter > 20:
+            if label_counter > 10:
                 label_counter = 0
                 # remove last OR operand from query
                 jira_query = jira_query[:-2] + ")"
