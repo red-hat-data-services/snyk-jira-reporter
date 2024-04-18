@@ -457,5 +457,5 @@ class JiraClient:
                 ][0]
                 snyk_jira_uid = split_arr[index][17:].strip()
                 uid_arr.append(snyk_jira_uid)
-            time.sleep(10)
+            time.sleep(15)
         return uid_arr, False
