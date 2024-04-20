@@ -112,52 +112,53 @@ def process_projects(
 ):
 
     for project in projects:
-        project_name = parse_project_name(project.name, project.branch)
-        file_name = parse_file_name(project.name)
+        if project.isMonitored:
+            project_name = parse_project_name(project.name, project.branch)
+            file_name = parse_file_name(project.name)
 
-        excluded_files = exclude_files.get(project_name, None)
-        if excluded_files and exclude_file(file_name, excluded_files):
-            logging.info(
-                f"skipping file {file_name}, because of the record in exclude_file.json"
-            )
-            continue
-        issue_set = project.issueset_aggregated.all()
-        issues_to_process = []
-        if project.type == "sast":
-            code_analysis_list = get_code_analysis_results(
-                project.id,
-                snyk_org_id,
-                snyk_api_token,
-                snyk_api_result_limit,
-                snyk_rest_api_version,
-            )
-            processed_list = format_code_analysis_results(
-                code_analysis_list, project.id
-            )
-            issues_to_process += processed_list
-        if project.type in ALLOWED_DEPS and (not disable_dep_analysis):
-            issues_to_process += issue_set.issues
-        if issues_to_process:
-            logging.info(
-                f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}"
-            )
-            vulnerabilities_to_compare_list, jira_query_list = (
-                list_snyk_vulnerabilities(
-                    issues_to_process,
-                    project.branch,
-                    project_name,
-                    file_name,
-                    jira_client,
+            excluded_files = exclude_files.get(project_name, None)
+            if excluded_files and exclude_file(file_name, excluded_files):
+                logging.info(
+                    f"skipping file {file_name}, because of the record in exclude_file.json"
                 )
-            )
-            if vulnerabilities_to_compare_list:
-                process_vulnerabilities(
-                    jira_client,
-                    vulnerabilities_to_compare_list,
-                    jira_query_list,
+                continue
+            issue_set = project.issueset_aggregated.all()
+            issues_to_process = []
+            if project.type == "sast":
+                code_analysis_list = get_code_analysis_results(
                     project.id,
-                    project.organization.slug,
+                    snyk_org_id,
+                    snyk_api_token,
+                    snyk_api_result_limit,
+                    snyk_rest_api_version,
                 )
+                processed_list = format_code_analysis_results(
+                    code_analysis_list, project.id
+                )
+                issues_to_process += processed_list
+            if project.type in ALLOWED_DEPS and (not disable_dep_analysis):
+                issues_to_process += issue_set.issues
+            if issues_to_process:
+                logging.info(
+                    f"looking for vulnerabilities in: {project_name}, file: {file_name}, branch: {project.branch}"
+                )
+                vulnerabilities_to_compare_list, jira_query_list = (
+                    list_snyk_vulnerabilities(
+                        issues_to_process,
+                        project.branch,
+                        project_name,
+                        file_name,
+                        jira_client,
+                    )
+                )
+                if vulnerabilities_to_compare_list:
+                    process_vulnerabilities(
+                        jira_client,
+                        vulnerabilities_to_compare_list,
+                        jira_query_list,
+                        project.id,
+                        project.organization.slug,
+                    )
 
 
 def load_mapping(file_path: str) -> {}:
