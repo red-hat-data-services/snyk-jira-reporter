@@ -1,6 +1,9 @@
 {
   "red-hat-data-services/data-science-pipelines-operator":{
     ".github/*": "",
+    "config/rbac/*": "",
+    "config/argo/*": "",
+    "controllers/testdata/*": "",
     "datasciencecluster/*":"",
     "docs/*":"",
     "hack/*":"",
@@ -32,6 +35,7 @@
     "package.json": "",
     "package-lock.json": "",
     "pytest.ini": "",
+    "requirements.txt": "",
     "mypy.ini": ""
   },
   "red-hat-data-services/data-science-pipelines-tekton":{
