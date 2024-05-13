@@ -96,7 +96,7 @@
     "test/*": "",
     "ui/*": "",
     "Makefile": "",
-    "*.yml": "",
+    ".*.yml": "",
     "Dockerfile*": "",
     "version.go": ""
   }
