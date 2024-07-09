@@ -1,3 +1,4 @@
 pysnyk==0.9.19
 python-dotenv==1.0.0
 jira==3.8.0
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
