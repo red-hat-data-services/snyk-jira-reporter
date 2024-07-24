@@ -22,7 +22,6 @@
     "red-hat-data-services/openvino_model_server": "Model Serving Runtimes",
     "red-hat-data-services/text-generation-inference": "Model Serving Runtimes",
     "red-hat-data-services/caikit": "Model Serving Runtimes",
-    "red-hat-data-services/codeflare-operator": "Training",
     "red-hat-data-services/caikit-tgis-backend": "Model Serving Runtimes",
     "red-hat-data-services/caikit-nlp": "Model Serving Runtimes",
     "red-hat-data-services/caikit-tgis-serving": "Model Serving Runtimes",
