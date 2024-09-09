@@ -22,17 +22,17 @@
     "red-hat-data-services/openvino_model_server": "Model Serving Runtimes",
     "red-hat-data-services/text-generation-inference": "Model Serving Runtimes",
     "red-hat-data-services/caikit": "Model Serving Runtimes",
-    "red-hat-data-services/codeflare-operator": "Distributed Workloads",
+    "red-hat-data-services/codeflare-operator": "Training",
     "red-hat-data-services/caikit-tgis-backend": "Model Serving Runtimes",
     "red-hat-data-services/caikit-nlp": "Model Serving Runtimes",
     "red-hat-data-services/caikit-tgis-serving": "Model Serving Runtimes",
-    "red-hat-data-services/distributed-workloads": "Distributed Workloads",
-    "red-hat-data-services/kuberay": "Distributed Workloads",
-    "red-hat-data-services/training-operator": "Distributed Workloads",
-    "foundation-model-stack/fms-hf-tuning": "Distributed Workloads",
+    "red-hat-data-services/distributed-workloads": "Workload Orchestration",
+    "red-hat-data-services/kuberay": "Training",
+    "red-hat-data-services/training-operator": "Training",
+    "foundation-model-stack/fms-hf-tuning": "Training",
     "red-hat-data-services/kubeflow": "IDE",
     "red-hat-data-services/model-registry": "Model Registry",
     "red-hat-data-services/ml-metadata": "Model Registry",
     "red-hat-data-services/model-registry-operator": "Model Registry",
-    "red-hat-data-services/kueue": "Kueue"
+    "red-hat-data-services/kueue": "Workload Orchestration"
 }
