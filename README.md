@@ -13,12 +13,8 @@ This is a GitHub Actions workflow that runs on all Snyk projects. It runs on a s
   * In case you need to exclude folders, insert regex in `exclude_files.json` in format:
   ```json
   {
-      "opendatahub/opendatahub-operator": {
-          "^modules/.*/vendor": ""
-      },
-      "/": {
-          "path_regex": "<empty_string>"
-      }
+      "opendatahub/opendatahub-operator": ["^modules/.*/vendor"]
+      "repo_name": Array<path_regex_to_ignore>
   }
   ```
   

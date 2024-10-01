@@ -5,7 +5,6 @@ from typing import Any, List, Optional
 import snyk
 import logging
 from jira import JIRA
-import time
 
 import utils.utils as utils
 
@@ -429,33 +428,48 @@ class JiraClient:
             )
             for jira in jira_issues_to_create or []:
                 print(jira["summary"])
+        return len(jira_issues_to_create)
 
-    def list_existing_jira_issues(
-        self, jira_query_list: [str], start_at: int, max_results: int
-    ) -> ([], bool):
-        """
-        list all jira bugs with given JQL query
+    """
+    list all jira bugs with given JQL query
 
-        :param jira_query: JQL query, which loads already existing jira bugs
-        :param start_at: position, where jira should start looking for new issues - used for pagination
-        :param max_results: number of results jira should return
-        :return: list of jira bugs, boolean, if there are any more results
-        """
-        uid_arr = []
-        for query in jira_query_list or []:
-            issue = self.__client.search_issues(
-                jql_str=query,
-                startAt=start_at,
-                maxResults=max_results,
-                json_result=True,
-            )
-            for jira_issue in issue["issues"]:
-                description = jira_issue["fields"]["description"]
-                split_arr = description.split("\n")
-                index = [
-                    idx for idx, s in enumerate(split_arr) if "##snyk-jira-uid##" in s
-                ][0]
-                snyk_jira_uid = split_arr[index][17:].strip()
-                uid_arr.append(snyk_jira_uid)
-            time.sleep(15)
-        return uid_arr, False
+    :param project_name: Name of the project to search
+    :param file_name: The file name captured by snyk
+    :param project_branch: The branch where snyk scans
+    :return: list of jira issues
+    """
+
+    def get_existing_jira_for_project(
+        self, project_name: str, file_name: str, project_branch: str
+    ):
+        max = (1 << 31) - 1
+        issues = []
+        start = 0
+        done = False
+        component_str = ""
+        component_mapping = self.get_component_mapping()
+        component = (
+            component_mapping[project_name] if project_name in component_mapping else ""
+        )
+        if len(component) > 0:
+            component_str = f'component = "{component}" AND '
+        string_to_search = (
+            f"{self.get_jira_label_prefix()}{project_name}:{file_name}:{project_branch}"
+        )
+        jira_query = f'project = RHOAIENG AND {component_str}description ~ "\\"{string_to_search}\\""'
+        logging.info(f"Fetching jiras using jql: {jira_query}")
+        while not done:
+            try:
+                nextpage = self.__client.search_issues(
+                    jira_query,
+                    startAt=start,
+                    maxResults=(max - start),
+                    json_result=True,
+                )["issues"]
+                issues.extend(nextpage)
+                start = start + len(nextpage)
+                done = (start >= max) or (len(nextpage) == 0)
+            except SystemError:
+                logging.error("Failed to fetch existing jiras")
+                sys.exit(1)
+        return issues

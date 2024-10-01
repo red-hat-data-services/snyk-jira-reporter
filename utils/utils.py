@@ -1,6 +1,7 @@
 import re
 import requests
-
+import os
+import json
 from models.models import *
 
 
@@ -128,7 +129,27 @@ def parse_file_name(project_name: str) -> str:
 
 
 def exclude_file(file_name: str, excluded_files: dict) -> bool:
-    for excluded_file in excluded_files:
-        if re.search(excluded_file, file_name):
+    for file in excluded_files:
+        if re.search(file, file_name):
             return True
     return False
+
+
+def load_mapping(file_path: str) -> {}:
+    try:
+        root_dir = os.path.abspath(os.curdir)
+        rel_file_path = os.path.join(root_dir, file_path)
+        os.path.isfile(rel_file_path)
+    except SystemError:
+        logging.error("the file does not exists")
+        sys.exit(1)
+
+    component_maping = {}
+    try:
+        with open(rel_file_path) as f:
+            data = f.read()
+            component_maping = json.loads(data)
+    except SystemError:
+        logging.error("failed to load file")
+        sys.exit(1)
+    return component_maping
