@@ -104,11 +104,7 @@ def cleanup_non_existing_issues(jira_client: JiraClient, issues_to_cleanup):
         logging.info(issue["key"])
         if not jira_client.is_dry_run():
             try:
-                jira_client.__client.add_comment(
-                    issue=issue,
-                    body="Closing this issue as it is no longer reported in snyk",
-                )
-                jira_client.__client.transition_issue(issue, "Closed")
+                jira_client.add_jira_comment(issue)
             except SystemError:
                 logging.error("Failed to close the jira")
                 sys.exit(1)
