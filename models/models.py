@@ -473,3 +473,17 @@ class JiraClient:
                 logging.error("Failed to fetch existing jiras")
                 sys.exit(1)
         return issues
+
+    """
+    Adds a comment to a jira and transition the issue state
+
+    :param issue: The issue to be transitioned
+    :return: list of jira issues
+    """
+
+    def add_jira_comment(self, issue):
+        self.__client.add_comment(
+            issue=issue,
+            body="Closing this issue as it is no longer reported in snyk",
+        )
+        self.__client.transition_issue(issue, "Closed")
