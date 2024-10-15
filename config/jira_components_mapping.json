@@ -13,6 +13,7 @@
     "red-hat-data-services/trustyai-explainability": "Model Explainability",
     "red-hat-data-services/trustyai-explainability-python": "Model Explainability",
     "red-hat-data-services/trustyai-service-operator": "Model Explainability",
+    "red-hat-data-services/lm-evaluation-harness": "Model Explainability",
     "red-hat-data-services/s2i-minimal-notebook-anaconda":"Workbenches",
     "red-hat-data-services/notebooks": "Workbenches",
     "red-hat-data-services/s2i-python-anaconda-base": "Workbenches",
