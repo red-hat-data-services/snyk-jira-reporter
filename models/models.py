@@ -482,8 +482,12 @@ class JiraClient:
     """
 
     def add_jira_comment(self, issue):
-        self.__client.add_comment(
-            issue=issue,
-            body="Closing this issue as it is no longer reported in snyk",
-        )
-        self.__client.transition_issue(issue, "Closed")
+        try:
+            jira_id = issue["key"]
+            self.__client.add_comment(
+                jira_id,
+                body="Closing this issue as it is no longer reported in snyk",
+            )
+            self.__client.transition_issue(jira_id, "Closed")
+        except Exception as e:
+            logging.error("Error while creating comment", e)
