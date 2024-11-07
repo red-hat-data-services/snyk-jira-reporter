@@ -105,6 +105,7 @@ def cleanup_non_existing_issues(jira_client: JiraClient, issues_to_cleanup):
         if not jira_client.is_dry_run():
             try:
                 jira_client.add_jira_comment(issue)
+                time.sleep(5)
             except SystemError:
                 logging.error("Failed to close the jira")
                 sys.exit(1)
