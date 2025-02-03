@@ -34,5 +34,6 @@
     "red-hat-data-services/model-registry": "Model Registry",
     "red-hat-data-services/ml-metadata": "Model Registry",
     "red-hat-data-services/model-registry-operator": "Model Registry",
-    "red-hat-data-services/kueue": "Workload Orchestration"
+    "red-hat-data-services/kueue": "Workload Orchestration",
+    "red-hat-data-services/feast": "Feast Feature Store"
 }
