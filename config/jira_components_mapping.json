@@ -1,4 +1,4 @@
-{   
+{
     "red-hat-data-services/kserve": "Model Server and Metrics",
     "red-hat-data-services/modelmesh-serving": "Model Server and Metrics",
     "red-hat-data-services/odh-model-controller": "Model Server and Metrics",
@@ -6,7 +6,7 @@
     "red-hat-data-services/rest-proxy": "Model Server and Metrics",
     "red-hat-data-services/modelmesh-runtime-adapter": "Model Server and Metrics",
     "red-hat-data-services/data-science-pipelines-tekton": "Pipelines",
-    "red-hat-data-services/data-science-pipelines-operator":"Pipelines",
+    "red-hat-data-services/data-science-pipelines-operator": "Pipelines",
     "red-hat-data-services/data-science-pipelines": "Pipelines",
     "red-hat-data-services/argo-workflows": "Pipelines",
     "red-hat-data-services/ods-ci": "CI/CD",
@@ -14,10 +14,10 @@
     "red-hat-data-services/trustyai-explainability-python": "Model Explainability",
     "red-hat-data-services/trustyai-service-operator": "Model Explainability",
     "red-hat-data-services/lm-evaluation-harness": "Model Explainability",
-    "red-hat-data-services/s2i-minimal-notebook-anaconda":"Workbenches",
+    "red-hat-data-services/s2i-minimal-notebook-anaconda": "Workbenches",
     "red-hat-data-services/notebooks": "Workbenches",
     "red-hat-data-services/s2i-python-anaconda-base": "Workbenches",
-    "red-hat-data-services/odh-dashboard":"Dashboard",
+    "red-hat-data-services/odh-dashboard": "Dashboard",
     "red-hat-data-services/rhods-operator": "Platform",
     "red-hat-data-services/robotframework-openshift": "QE",
     "red-hat-data-services/openvino_model_server": "Model Serving Runtimes",
@@ -35,5 +35,5 @@
     "red-hat-data-services/ml-metadata": "Model Registry",
     "red-hat-data-services/model-registry-operator": "Model Registry",
     "red-hat-data-services/kueue": "Workload Orchestration",
-    "red-hat-data-services/feast": "Feast Feature Store"
+    "red-hat-data-services/feast": "Feature Store"
 }
