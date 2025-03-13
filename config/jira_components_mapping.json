@@ -9,7 +9,7 @@
     "red-hat-data-services/data-science-pipelines-operator": "Pipelines",
     "red-hat-data-services/data-science-pipelines": "Pipelines",
     "red-hat-data-services/argo-workflows": "Pipelines",
-    "red-hat-data-services/ods-ci": "CI/CD",
+    "red-hat-data-services/ods-ci": "QE",
     "red-hat-data-services/trustyai-explainability": "Model Explainability",
     "red-hat-data-services/trustyai-explainability-python": "Model Explainability",
     "red-hat-data-services/trustyai-service-operator": "Model Explainability",
