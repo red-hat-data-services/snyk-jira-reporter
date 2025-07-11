@@ -35,5 +35,6 @@
     "red-hat-data-services/ml-metadata": "Model Registry",
     "red-hat-data-services/model-registry-operator": "Model Registry",
     "red-hat-data-services/kueue": "Workload Orchestration",
-    "red-hat-data-services/feast": "Feature Store"
+    "red-hat-data-services/feast": "Feature Store",
+    "red-hat-data-services/llama-stack-k8s-operator": "Llama Stack Core"
 }
