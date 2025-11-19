@@ -37,5 +37,6 @@
     "red-hat-data-services/model-registry-operator": "Model Registry",
     "red-hat-data-services/kueue": "Workload Orchestration",
     "red-hat-data-services/feast": "Feature Store",
-    "red-hat-data-services/llama-stack-k8s-operator": "Llama Stack Core"
+    "red-hat-data-services/llama-stack-k8s-operator": "Llama Stack Core",
+    "opendatahub-io/kubeflow-sdk": "Kubeflow-DevX"
 }
