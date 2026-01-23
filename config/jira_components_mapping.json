@@ -19,6 +19,7 @@
     "red-hat-data-services/s2i-python-anaconda-base": "Notebooks Images",
     "red-hat-data-services/odh-dashboard": "AI Core Dashboard",
     "red-hat-data-services/rhods-operator": "AI Core Platform",
+    "red-hat-data-services/kube-auth-proxy": "AI Core Platform",
     "red-hat-data-services/robotframework-openshift": "QE",
     "red-hat-data-services/openvino_model_server": "Model Runtimes",
     "red-hat-data-services/text-generation-inference": "Model Runtimes",
