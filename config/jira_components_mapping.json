@@ -40,5 +40,7 @@
     "red-hat-data-services/kueue": "Workload Orchestration",
     "red-hat-data-services/feast": "Feature Store",
     "red-hat-data-services/llama-stack-k8s-operator": "LlamaStack",
-    "opendatahub-io/kubeflow-sdk": "Kubeflow Unified SDK"
+    "opendatahub-io/kubeflow-sdk": "Kubeflow Unified SDK",
+    "red-hat-data-services/mlflow": "MLflow",
+    "red-hat-data-services/mlflow-operator": "MLflow"
 }
