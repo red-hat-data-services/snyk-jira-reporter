@@ -104,5 +104,17 @@
   ],
   "red-hat-data-services/distributed-workloads":[
     "tests/*"
+  ],
+  "red-hat-data-services/mlflow": [
+    "^Dockerfile$",
+    "dev/*",
+    "docker/*",
+    "docs/*",
+    "examples/*",
+    "libs/typescript/*",
+    "mlflow/java/*",
+    "mlflow/R/*",
+    "mlflow/server/js/custom-eslint-rules/*",
+    "requirements/*"
   ]
 }
