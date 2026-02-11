@@ -14,6 +14,7 @@
     "red-hat-data-services/trustyai-explainability-python": "AI Safety",
     "red-hat-data-services/trustyai-service-operator": "AI Safety",
     "red-hat-data-services/lm-evaluation-harness": "AI Evaluations",
+    "red-hat-data-services/eval-hub": "AI Evaluations",
     "red-hat-data-services/s2i-minimal-notebook-anaconda": "Notebooks Images",
     "red-hat-data-services/notebooks": "Notebooks Images",
     "red-hat-data-services/s2i-python-anaconda-base": "Notebooks Images",
