@@ -44,5 +44,6 @@
     "opendatahub-io/kubeflow-sdk": "Kubeflow Unified SDK",
     "red-hat-data-services/mlflow": "MLflow",
     "red-hat-data-services/mlflow-operator": "MLflow",
-    "red-hat-data-services/pipelines-components": "AI Pipelines"
+    "red-hat-data-services/pipelines-components": "AI Pipelines",
+    "red-hat-data-services/models-as-a-service": "Model as a Service"
 }
