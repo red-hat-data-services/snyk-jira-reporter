@@ -53,7 +53,7 @@
         "red-hat-data-services/distributed-workloads",
         "red-hat-data-services/kueue",
         "red-hat-data-services/codeflare-operator",
-        "codeflare-sdk"
+        "project-codeflare/codeflare-sdk"
     ],
     "KubeRay": [
         "red-hat-data-services/kuberay"

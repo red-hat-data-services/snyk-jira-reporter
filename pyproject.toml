@@ -9,6 +9,7 @@ description = "Automated Snyk vulnerability to Jira ticket reporter"
 requires-python = ">=3.9"
 dependencies = [
     "jira>=3.8.0",
+    "jsonschema>=4.0,<5.0",
     "pydantic>=2.0,<3.0",
     "pydantic-settings>=2.0,<3.0",
     "requests>=2.28,<3.0",

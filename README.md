@@ -116,8 +116,25 @@ Edit `config/jira_components_mapping.json`:
 
 1. **Find the right component**: Look at the existing mappings to find where your repo belongs
 2. **Add your repository**: Use the full GitHub path format `org-name/repo-name`
-3. **Test the change**: Run with dry-run to verify the mapping works
+3. **Validate the change**: Run the schema validator to catch any errors immediately
 4. **Commit the change**: Submit a PR with your updated mapping
+
+**Automatic Validation**
+
+This project includes automatic schema validation to catch configuration errors immediately:
+
+```bash
+# Validate your config changes locally
+python scripts/validate_config.py
+
+# This checks for:
+# ✓ Valid JSON format
+# ✓ Correct repository format (org/repo-name)
+# ✓ No duplicate repositories
+# ✓ Valid component names
+```
+
+The validation runs automatically in CI, so any errors will be caught before merge.
 
 **Example: Adding a new MLflow repository**
 
@@ -361,15 +378,21 @@ All endpoints are current and supported as of 2024. The tool includes backward c
 # Step 1: Edit the config file
 vim config/jira_components_mapping.json
 
-# Step 2: Test your change
-DRY_RUN=true python -m snyk_jira_reporter --disable-dep-analysis
+# Step 2: Validate your change (automatic schema validation)
+python scripts/validate_config.py
 
-# Step 3: Look for your repo in the logs
-# Should see: "component: Your Component Name"
-
-# Step 4: Commit and create PR
+# Step 3: Commit and create PR (CI will also validate)
 git add config/jira_components_mapping.json
 git commit -m "Add my-new-repo to Component Name mapping"
 ```
+
+**Schema validation catches common errors automatically:**
+- Invalid JSON format
+- Wrong repository name format (must be `org/repo-name`)
+- Duplicate repositories across components
+- Invalid component names
+- Missing required fields
+
+No need for manual testing - the validator ensures your config is correct!
 
 Need help? Check the troubleshooting section above or reach out to the team! 
