@@ -1,49 +1,86 @@
 {
-    "red-hat-data-services/kserve": "Model Serving",
-    "red-hat-data-services/modelmesh-serving": "Model Serving",
-    "red-hat-data-services/odh-model-controller": "Model Serving",
-    "red-hat-data-services/modelmesh": "Model Serving",
-    "red-hat-data-services/rest-proxy": "Model Serving",
-    "red-hat-data-services/modelmesh-runtime-adapter": "Model Serving",
-    "red-hat-data-services/data-science-pipelines-tekton": "AI Pipelines",
-    "red-hat-data-services/data-science-pipelines-operator": "AI Pipelines",
-    "red-hat-data-services/data-science-pipelines": "AI Pipelines",
-    "red-hat-data-services/argo-workflows": "AI Pipelines",
-    "red-hat-data-services/ods-ci": "QE",
-    "red-hat-data-services/trustyai-explainability": "AI Safety",
-    "red-hat-data-services/trustyai-explainability-python": "AI Safety",
-    "red-hat-data-services/trustyai-service-operator": "AI Safety",
-    "red-hat-data-services/lm-evaluation-harness": "AI Evaluations",
-    "red-hat-data-services/eval-hub": "AI Evaluations",
-    "red-hat-data-services/s2i-minimal-notebook-anaconda": "Notebooks Images",
-    "red-hat-data-services/notebooks": "Notebooks Images",
-    "red-hat-data-services/s2i-python-anaconda-base": "Notebooks Images",
-    "red-hat-data-services/odh-dashboard": "AI Core Dashboard",
-    "red-hat-data-services/rhods-operator": "AI Core Platform",
-    "red-hat-data-services/kube-auth-proxy": "AI Core Platform",
-    "red-hat-data-services/robotframework-openshift": "QE",
-    "red-hat-data-services/openvino_model_server": "Model Runtimes",
-    "red-hat-data-services/text-generation-inference": "Model Runtimes",
-    "red-hat-data-services/caikit": "Model Runtimes",
-    "red-hat-data-services/caikit-tgis-backend": "Model Runtimes",
-    "red-hat-data-services/caikit-nlp": "Model Runtimes",
-    "red-hat-data-services/caikit-tgis-serving": "Model Runtimes",
-    "red-hat-data-services/mlserver": "Model Runtimes",
-    "red-hat-data-services/distributed-workloads": "Workload Orchestration",
-    "red-hat-data-services/kuberay": "KubeRay",
-    "red-hat-data-services/training-operator": "Training Kubeflow",
-    "red-hat-data-services/trainer": "Training Kubeflow",
-    "foundation-model-stack/fms-hf-tuning": "Training Kubeflow",
-    "red-hat-data-services/kubeflow": "Notebooks Server",
-    "red-hat-data-services/model-registry": "AI Hub",
-    "red-hat-data-services/ml-metadata": "AI Pipelines",
-    "red-hat-data-services/model-registry-operator": "AI Hub",
-    "red-hat-data-services/kueue": "Workload Orchestration",
-    "red-hat-data-services/feast": "Feature Store",
-    "red-hat-data-services/llama-stack-k8s-operator": "LlamaStack",
-    "opendatahub-io/kubeflow-sdk": "Kubeflow Unified SDK",
-    "red-hat-data-services/mlflow": "MLflow",
-    "red-hat-data-services/mlflow-operator": "MLflow",
-    "red-hat-data-services/pipelines-components": "AI Pipelines",
-    "red-hat-data-services/models-as-a-service": "Model as a Service",
-    "red-hat-data-services/spark-operator": "Spark Operator"
+    "Model Serving": [
+        "red-hat-data-services/kserve",
+        "red-hat-data-services/modelmesh-serving",
+        "red-hat-data-services/odh-model-controller",
+        "red-hat-data-services/modelmesh",
+        "red-hat-data-services/rest-proxy",
+        "red-hat-data-services/modelmesh-runtime-adapter"
+    ],
+    "AI Pipelines": [
+        "red-hat-data-services/data-science-pipelines-tekton",
+        "red-hat-data-services/data-science-pipelines-operator",
+        "red-hat-data-services/data-science-pipelines",
+        "red-hat-data-services/argo-workflows",
+        "red-hat-data-services/ml-metadata",
+        "red-hat-data-services/pipelines-components"
+    ],
+    "QE": [
+        "red-hat-data-services/ods-ci",
+        "red-hat-data-services/robotframework-openshift"
+    ],
+    "AI Safety": [
+        "red-hat-data-services/trustyai-explainability",
+        "red-hat-data-services/trustyai-explainability-python",
+        "red-hat-data-services/trustyai-service-operator"
+    ],
+    "AI Evaluations": [
+        "red-hat-data-services/lm-evaluation-harness",
+        "red-hat-data-services/eval-hub"
+    ],
+    "Notebooks Images": [
+        "red-hat-data-services/s2i-minimal-notebook-anaconda",
+        "red-hat-data-services/notebooks",
+        "red-hat-data-services/s2i-python-anaconda-base"
+    ],
+    "AI Core Dashboard": [
+        "red-hat-data-services/odh-dashboard"
+    ],
+    "AI Core Platform": [
+        "red-hat-data-services/rhods-operator",
+        "red-hat-data-services/kube-auth-proxy"
+    ],
+    "Model Runtimes": [
+        "red-hat-data-services/openvino_model_server",
+        "red-hat-data-services/text-generation-inference",
+        "red-hat-data-services/caikit",
+        "red-hat-data-services/caikit-tgis-backend",
+        "red-hat-data-services/caikit-nlp",
+        "red-hat-data-services/caikit-tgis-serving",
+        "red-hat-data-services/mlserver"
+    ],
+    "Workload Orchestration": [
+        "red-hat-data-services/distributed-workloads",
+        "red-hat-data-services/kueue",
+        "red-hat-data-services/codeflare-operator",
+        "codeflare-sdk"
+    ],
+    "KubeRay": [
+        "red-hat-data-services/kuberay"
+    ],
+    "Training Kubeflow": [
+        "red-hat-data-services/training-operator",
+        "red-hat-data-services/trainer",
+        "foundation-model-stack/fms-hf-tuning"
+    ],
+    "Notebooks Server": [
+        "red-hat-data-services/kubeflow"
+    ],
+    "AI Hub": [
+        "red-hat-data-services/model-registry",
+        "red-hat-data-services/model-registry-operator"
+    ],
+    "Feature Store": [
+        "red-hat-data-services/feast"
+    ],
+    "LlamaStack": [
+        "red-hat-data-services/llama-stack-k8s-operator"
+    ],
+    "Kubeflow Unified SDK": [
+        "opendatahub-io/kubeflow-sdk"
+    ],
+    "MLflow": [
+        "red-hat-data-services/mlflow",
+        "red-hat-data-services/mlflow-operator"
+    ]
+}

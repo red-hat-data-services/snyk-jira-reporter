@@ -6,13 +6,19 @@ on:
 env:
   # secrets
   JIRA_API_TOKEN: ${{ secrets.jira_api_token }}
+  JIRA_EMAIL: ${{ secrets.jira_email }}
   SNYK_API_TOKEN: ${{ secrets.snyk_api_token }}
-  #JIRA envs
-  JIRA_SERVER: https://issues.redhat.com # Org jira server
+  # JIRA envs
+  JIRA_SERVER: https://redhat.atlassian.net # Jira Cloud server
   JIRA_PROJECT_ID: 12340620 # refers to RHOAIENG
+  JIRA_PROJECT_KEY: RHOAIENG
+  JIRA_LABEL_PREFIX: "snyk-jira-integration:"
   # SNYK envs
   SNYK_ORG_ID: ed870ef2-8f76-4ea1-ad4b-dacfa225eb69 # refers to the RHOAI org in Snyk
-  #other envs
+  # config file paths
+  COMPONENT_MAPPING_FILE_PATH: ./config/jira_components_mapping.json
+  EXCLUDE_FILES_FILE_PATH: ./config/exclude_files.json
+  # other envs
   DRY_RUN: false
 
 jobs:
@@ -20,17 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: setup python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
       - name: install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -e .
 
       - name: execute py script for automation
-        run: python jira-automation.py --disable-dep-analysis
+        run: python -m snyk_jira_reporter --disable-dep-analysis

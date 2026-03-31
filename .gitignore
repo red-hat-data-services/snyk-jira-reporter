@@ -1,2 +1,15 @@
 __pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+.venv/
+.env
+.coverage
+.coverage.*
+htmlcov/
 Pipfile
