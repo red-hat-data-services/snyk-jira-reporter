@@ -4,7 +4,6 @@
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 try:
     import jsonschema
@@ -13,7 +12,7 @@ except ImportError:
     sys.exit(1)
 
 
-def validate_file(config_file: Path, schema_file: Path) -> tuple[bool, Optional[str]]:
+def validate_file(config_file: Path, schema_file: Path) -> tuple[bool, str | None]:
     """Validate a JSON config file against its schema.
 
     Args:
@@ -25,11 +24,11 @@ def validate_file(config_file: Path, schema_file: Path) -> tuple[bool, Optional[
     """
     try:
         # Load schema
-        with open(schema_file, 'r') as f:
+        with open(schema_file) as f:
             schema = json.load(f)
 
         # Load config
-        with open(config_file, 'r') as f:
+        with open(config_file) as f:
             config = json.load(f)
 
         # Validate
@@ -56,7 +55,7 @@ def main() -> int:
         (
             config_dir / "jira_components_mapping.json",
             config_dir / "jira_components_mapping.schema.json",
-            "Jira Components Mapping"
+            "Jira Components Mapping",
         ),
     ]
 

@@ -1,7 +1,5 @@
 """Pydantic models for Snyk REST API data structures."""
 
-from typing import Optional, Union
-
 from pydantic import BaseModel
 
 
@@ -19,7 +17,7 @@ class SnykProject(BaseModel):
     name: str
     type: str
     status: str
-    target_reference: Optional[str] = None
+    target_reference: str | None = None
     org_slug: str = ""
 
     @property
@@ -46,11 +44,11 @@ class SnykIssue(BaseModel):
     severity: str
     url: str = ""
     package_name: str = ""
-    package_version: Union[list[str], str] = ""
-    fixed_in: Optional[list[str]] = None
+    package_version: list[str] | str = ""
+    fixed_in: list[str] | None = None
     identifiers: dict[str, list[str]] = {}  # noqa: RUF012
-    cvss_score: Optional[Union[float, str]] = None
+    cvss_score: float | str | None = None
     issue_type: str = ""
     key: str = ""
     source_file: str = ""
-    source_line: Optional[int] = None
+    source_line: int | None = None

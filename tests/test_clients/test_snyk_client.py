@@ -113,9 +113,7 @@ class TestGetOrgSlug:
     def test_returns_slug(self, snyk_client):
         """Test successful org slug retrieval."""
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "data": {"attributes": {"slug": "my-org"}}
-        }
+        mock_response.json.return_value = {"data": {"attributes": {"slug": "my-org"}}}
         snyk_client.session.get.return_value = mock_response
 
         slug = snyk_client.get_org_slug("org-123")

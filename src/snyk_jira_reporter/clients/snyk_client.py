@@ -56,10 +56,12 @@ class SnykClient:
     def __init__(self, api_token: str, api_version: str, result_limit: str) -> None:
         self.api_version = api_version
         self.result_limit = result_limit
-        self.session = _create_session({
-            "authorization": f"token {api_token}",
-            "accept": "application/vnd.api+json",
-        })
+        self.session = _create_session(
+            {
+                "authorization": f"token {api_token}",
+                "accept": "application/vnd.api+json",
+            }
+        )
 
     def _paginate(self, url: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         """Fetch all pages from a paginated Snyk REST API endpoint.
@@ -77,9 +79,7 @@ class SnykClient:
         results: list[dict[str, Any]] = []
         for _page in range(SNYK_MAX_PAGES):
             try:
-                http_response = self.session.get(
-                    url, params=params, timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS
-                )
+                http_response = self.session.get(url, params=params, timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS)
                 http_response.raise_for_status()
                 response = http_response.json()
             except requests.exceptions.RequestException as e:
@@ -116,9 +116,7 @@ class SnykClient:
         url = f"{SNYK_REST_API_BASE_URL}/orgs/{org_id}"
         params = {"version": self.api_version}
         try:
-            http_response = self.session.get(
-                url, params=params, timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS
-            )
+            http_response = self.session.get(url, params=params, timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS)
             http_response.raise_for_status()
             response = http_response.json()
             return response["data"]["attributes"]["slug"]  # type: ignore[no-any-return]
@@ -195,9 +193,7 @@ class SnykClient:
         raw_issues = self._paginate(url, params)
         return self._parse_issues(raw_issues, issue_type)
 
-    def _parse_issues(
-        self, raw_issues: list[dict[str, Any]], issue_type: str
-    ) -> list[SnykIssue]:
+    def _parse_issues(self, raw_issues: list[dict[str, Any]], issue_type: str) -> list[SnykIssue]:
         """Parse raw REST API issue data into SnykIssue models.
 
         Args:

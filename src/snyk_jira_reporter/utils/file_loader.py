@@ -68,8 +68,7 @@ def load_component_mapping(file_path: str) -> dict[str, str]:
         for repo in repos:
             if repo in repo_to_component:
                 raise FileLoadError(
-                    f"Duplicate repo '{repo}' found in components "
-                    f"'{repo_to_component[repo]}' and '{component}'"
+                    f"Duplicate repo '{repo}' found in components '{repo_to_component[repo]}' and '{component}'"
                 )
             repo_to_component[repo] = component
     return repo_to_component
