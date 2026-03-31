@@ -31,5 +31,8 @@ jobs:
       - name: type check
         run: mypy src/
 
+      - name: validate config schemas
+        run: python scripts/validate_config.py
+
       - name: run tests
         run: pytest --cov=snyk_jira_reporter tests/
