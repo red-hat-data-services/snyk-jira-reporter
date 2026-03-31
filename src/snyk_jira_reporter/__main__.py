@@ -81,17 +81,6 @@ def main() -> None:
         )
         projects = snyk_client.list_projects(settings.snyk_org_id)
 
-        # Test with odh-dashboard component specifically for comprehensive validation
-        TEST_REPO_NAME = "red-hat-data-services/odh-dashboard"
-        filtered_projects = []
-        for project in projects:
-            if TEST_REPO_NAME in project.name and project.is_monitored:
-                filtered_projects.append(project)
-                if len(filtered_projects) >= 5:  # Test with up to 5 odh-dashboard projects
-                    break
-        projects = filtered_projects
-        logging.info("Testing odh-dashboard component: filtered to %d projects", len(projects))
-
         jira_client = JiraClient(
             jira_server=settings.jira_server,
             jira_email=settings.jira_email,

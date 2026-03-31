@@ -52,16 +52,11 @@ class JiraClient:
         self.jira_project_key = jira_project_key
         self.component_mapping = component_mapping
         self.dry_run = dry_run
-        self.jira_server = jira_server.rstrip('/')  # Remove trailing slash
+        self.jira_server = jira_server.rstrip("/")  # Remove trailing slash
         self.auth = (jira_email, jira_api_token)
         try:
             # Force API v3 for Jira Cloud compatibility
-            options = {
-                "server": jira_server,
-                "rest_path": "api",
-                "rest_api_version": "3",
-                "verify": True
-            }
+            options = {"server": jira_server, "rest_path": "api", "rest_api_version": "3", "verify": True}
             self.client = JIRA(
                 options=options,
                 basic_auth=(jira_email, jira_api_token),
@@ -104,9 +99,7 @@ class JiraClient:
                 }
             )
         if self.dry_run:
-            logger.info(
-                "DRY RUN: %d issue(s) would be created", len(jira_issues_to_create)
-            )
+            logger.info("DRY RUN: %d issue(s) would be created", len(jira_issues_to_create))
             for jira_issue in jira_issues_to_create:
                 logger.info("  Would create: %s", jira_issue["summary"])
             return len(jira_issues_to_create)
@@ -160,10 +153,13 @@ class JiraClient:
         if project_branch == "main":
             branches_to_search.append("master")  # Also search for old master branch issues
         elif project_branch == "master":
-            branches_to_search.append("main")    # Also search for new main branch issues
+            branches_to_search.append("main")  # Also search for new main branch issues
 
         # Create a broader JQL query to find related issues
-        jira_query = f'project = {self.jira_project_key} AND {component_str}description ~ "{project_file_pattern}" AND description ~ "snyk-jira-uid"'
+        jira_query = (
+            f"project = {self.jira_project_key} AND {component_str}"
+            f'description ~ "{project_file_pattern}" AND description ~ "snyk-jira-uid"'
+        )
 
         logger.info("Fetching jiras using jql: %s", jira_query)
         logger.debug("Searching for project: %s, file: %s, branches: %s", project_name, file_name, branches_to_search)
@@ -220,7 +216,7 @@ class JiraClient:
             return False
 
         uid = match.group(1).strip()
-        uid_parts = uid.split(':')
+        uid_parts = uid.split(":")
 
         if len(uid_parts) < 4:
             return False
@@ -237,9 +233,10 @@ class JiraClient:
         # Check if branch matches any of the acceptable branches
         return uid_branch in branches
 
-    def _extract_text_from_adf(self, adf_content: dict) -> str:
+    def _extract_text_from_adf(self, adf_content: dict[str, Any]) -> str:
         """Extract plain text from Atlassian Document Format content."""
-        def extract_text_recursive(node):
+
+        def extract_text_recursive(node: Any) -> str:
             if isinstance(node, dict):
                 text = ""
                 if "text" in node:
@@ -274,11 +271,11 @@ class JiraClient:
         url = f"{self.jira_server}/rest/api/3/search/jql"
         headers = {"Accept": "application/json"}
 
-        params = {
+        params: dict[str, str | int] = {
             "jql": jql_query,
             "startAt": start_at,
             "maxResults": max_results,
-            "fields": "key,summary,description,status,components,labels"
+            "fields": "key,summary,description,status,components,labels",
         }
 
         try:
@@ -291,7 +288,7 @@ class JiraClient:
             logger.debug("Response status: %d", response.status_code)
 
             if response.status_code == 200:
-                result = response.json()
+                result: dict[str, Any] = response.json()
                 logger.debug("Search succeeded, found %d issues", len(result.get("issues", [])))
 
                 # Debug: Show the structure of the first issue to understand the format
@@ -337,10 +334,7 @@ class JiraClient:
         for issue_data in issues_data:
             try:
                 url = f"{self.jira_server}/rest/api/3/issue"
-                headers = {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                }
+                headers = {"Accept": "application/json", "Content-Type": "application/json"}
                 # Convert the issue data to the correct format for Jira Cloud
                 payload = {"fields": self._convert_issue_fields_for_cloud(issue_data)}
 
@@ -375,13 +369,11 @@ class JiraClient:
             Converted fields dict for Jira Cloud.
         """
         # Convert project ID to proper format
-        converted = {}
+        converted: dict[str, Any] = {}
         for field, value in issue_data.items():
             if field == "project":
                 converted[field] = {"key": str(value)}
-            elif field == "issuetype":
-                converted[field] = {"name": value["name"]}
-            elif field == "priority":
+            elif field == "issuetype" or field == "priority":
                 converted[field] = {"name": value["name"]}
             elif field == "components":
                 converted[field] = [{"name": comp["name"]} for comp in value]
@@ -392,17 +384,7 @@ class JiraClient:
                 converted[field] = {
                     "type": "doc",
                     "version": 1,
-                    "content": [
-                        {
-                            "type": "paragraph",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": str(value)
-                                }
-                            ]
-                        }
-                    ]
+                    "content": [{"type": "paragraph", "content": [{"type": "text", "text": str(value)}]}],
                 }
             else:
                 converted[field] = value
@@ -419,26 +401,13 @@ class JiraClient:
             JiraClientError: If the API call fails.
         """
         url = f"{self.jira_server}/rest/api/3/issue/{issue_key}/comment"
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
         # Use simple Atlassian Document Format (ADF) for comments
         payload = {
             "body": {
                 "type": "doc",
                 "version": 1,
-                "content": [
-                    {
-                        "type": "paragraph",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": comment_body
-                            }
-                        ]
-                    }
-                ]
+                "content": [{"type": "paragraph", "content": [{"type": "text", "text": comment_body}]}],
             }
         }
 
@@ -489,20 +458,19 @@ class JiraClient:
                     "Transition '%s' not found for issue %s. Available transitions: %s",
                     transition_name,
                     issue_key,
-                    available_transitions
+                    available_transitions,
                 )
                 return
 
             # Execute transition
             logger.debug("Executing transition '%s' (ID: %s) for issue %s", transition_name, transition_id, issue_key)
             transition_url = f"{self.jira_server}/rest/api/3/issue/{issue_key}/transitions"
-            headers = {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
+            headers = {"Accept": "application/json", "Content-Type": "application/json"}
             payload = {"transition": {"id": transition_id}}
 
-            response = requests.post(transition_url, json=payload, headers=headers, auth=self.auth, verify=True, timeout=30)
+            response = requests.post(
+                transition_url, json=payload, headers=headers, auth=self.auth, verify=True, timeout=30
+            )
 
             logger.debug("Transition response status: %d", response.status_code)
             if response.status_code not in [200, 204]:
