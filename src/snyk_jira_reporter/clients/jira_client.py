@@ -5,13 +5,12 @@ from typing import Any
 
 import requests
 from jira import JIRA
-from jira.exceptions import JIRAError
 
 from snyk_jira_reporter.config.constants import (
+    DEFAULT_REQUEST_TIMEOUT_SECONDS,
     JIRA_BUG_ISSUE_TYPE,
     JIRA_CLOSE_COMMENT,
     JIRA_CLOSE_TRANSITION,
-    JIRA_MAX_SEARCH_PAGES,
     JIRA_SECURITY_FIELD_ID,
     UID_REGEX,
 )
@@ -54,15 +53,10 @@ class JiraClient:
         self.dry_run = dry_run
         self.jira_server = jira_server.rstrip("/")  # Remove trailing slash
         self.auth = (jira_email, jira_api_token)
-        try:
-            # Force API v3 for Jira Cloud compatibility
-            options = {"server": jira_server, "rest_path": "api", "rest_api_version": "3", "verify": True}
-            self.client = JIRA(
-                options=options,
-                basic_auth=(jira_email, jira_api_token),
-            )
-        except JIRAError as e:
-            raise JiraClientError(f"Failed to create Jira client: {e}") from e
+
+        # Initialize JIRA library client for basic operations
+        # Use basic_auth for Jira Cloud API token authentication
+        self.jira = JIRA(server=self.jira_server, basic_auth=(jira_email, jira_api_token), options={"verify": True})
 
     def create_jira_issues(
         self,
@@ -82,41 +76,48 @@ class JiraClient:
         Returns:
             Number of issues actually created, or would-be-created count in dry-run mode.
         """
-        jira_issues_to_create = []
+        if self.dry_run:
+            logger.info("DRY RUN: %d issue(s) would be created", len(vulnerabilities_to_create))
+            for vulnerability in vulnerabilities_to_create:
+                logger.info("  Would create: %s", vulnerability.jira_summary())
+            return len(vulnerabilities_to_create)
+
+        created_count = 0
         for vulnerability in vulnerabilities_to_create:
-            has_component = bool(vulnerability.component)
-            labels = create_labels(vulnerability, has_component_mapping=has_component)
-            jira_issues_to_create.append(
-                {
-                    "project": jira_project_id,
+            try:
+                has_component = bool(vulnerability.component)
+                labels = create_labels(vulnerability, has_component_mapping=has_component)
+
+                # Prepare issue fields for jira library
+                issue_fields = {
+                    "project": {"key": jira_project_id},
                     "summary": vulnerability.jira_summary(),
-                    "description": vulnerability.jira_description(snyk_org_slug, snyk_project_id),
                     "issuetype": {"name": JIRA_BUG_ISSUE_TYPE},
-                    "components": [{"name": vulnerability.component}],
                     "security": {"id": JIRA_SECURITY_FIELD_ID},
                     "labels": labels,
                     "priority": get_jira_priority(vulnerability.severity),
                 }
-            )
-        if self.dry_run:
-            logger.info("DRY RUN: %d issue(s) would be created", len(jira_issues_to_create))
-            for jira_issue in jira_issues_to_create:
-                logger.info("  Would create: %s", jira_issue["summary"])
-            return len(jira_issues_to_create)
 
-        try:
-            results = self._create_issues_v3(jira_issues_to_create)
-        except JIRAError as e:
-            logger.error("Failed to create Jira issues: %s", e)
-            return 0
+                # Only add components if we have a valid component name
+                if vulnerability.component:
+                    issue_fields["components"] = [{"name": vulnerability.component}]  # type: ignore[list-item]
 
-        created_count = 0
-        for result in results:
-            if "issue" in result:
-                logger.info("Created JIRA issue key: %s", result["issue"])
+                # Create issue using jira library
+                new_issue = self.jira.create_issue(fields=issue_fields)
+                logger.info("Created JIRA issue key: %s", new_issue.key)
+
+                # Update the description with ADF format using direct API call
+                # The jira library doesn't handle ADF conversion automatically
+                description_adf = self._convert_description_to_adf(
+                    vulnerability.jira_description(snyk_org_slug, snyk_project_id)
+                )
+                self._update_issue_description_v3(new_issue.key, description_adf)
+
                 created_count += 1
-            elif "error" in result:
-                logger.error("Failed to create Jira issue: %s", result["error"])
+
+            except Exception as e:
+                logger.error("Failed to create Jira issue for vulnerability %s: %s", vulnerability.title, e)
+
         return created_count
 
     def get_existing_jira_for_project(
@@ -139,8 +140,6 @@ class JiraClient:
         Raises:
             JiraClientError: If the Jira search fails.
         """
-        issues: list[dict[str, Any]] = []
-        start = 0
         component = self.component_mapping.get(project_name, "")
         component_str = f'component = "{component}" AND ' if component else ""
 
@@ -164,34 +163,40 @@ class JiraClient:
         logger.info("Fetching jiras using jql: %s", jira_query)
         logger.debug("Searching for project: %s, file: %s, branches: %s", project_name, file_name, branches_to_search)
 
-        for _ in range(JIRA_MAX_SEARCH_PAGES):
-            try:
-                # Always use direct API call since jira library has issues with Cloud
-                search_result = self._search_issues_v3(jira_query, start_at=start, max_results=50)
-                next_page: list[dict[str, Any]] = search_result["issues"]
+        try:
+            # Use JIRA library for automatic pagination and robust error handling
+            raw_issues = self.jira.search_issues(
+                jira_query,
+                maxResults=0,  # 0 means unlimited results, library handles pagination
+                fields="key,summary,description,status,components,labels",
+            )
 
-                # Filter results to match our specific project/file/branch combination
-                filtered_page = []
-                for issue in next_page:
-                    fields = issue.get("fields", {})
-                    description = fields.get("description", "") or ""
+            # Convert JIRA library objects to dicts and filter results
+            filtered_issues = []
+            for issue in raw_issues:
+                # Convert JIRA issue object to dict format
+                issue_dict: dict[str, Any] = {
+                    "key": issue.key,
+                    "fields": {
+                        "summary": getattr(issue.fields, "summary", ""),
+                        "description": getattr(issue.fields, "description", ""),
+                        "status": {"name": getattr(issue.fields.status, "name", "")} if issue.fields.status else {},
+                        "components": [{"name": c.name} for c in getattr(issue.fields, "components", [])],
+                        "labels": getattr(issue.fields, "labels", []),
+                    },
+                }
 
-                    # Check if this issue matches our project/file/branch criteria
-                    if self._issue_matches_criteria(description, project_name, file_name, branches_to_search):
-                        filtered_page.append(issue)
-                        logger.debug("  Found matching issue: %s", issue.get("key"))
+                # Check if this issue matches our project/file/branch criteria
+                description = issue_dict["fields"].get("description", "") or ""
+                if self._issue_matches_criteria(description, project_name, file_name, branches_to_search):
+                    filtered_issues.append(issue_dict)
+                    logger.debug("  Found matching issue: %s", issue.key)
 
-                issues.extend(filtered_page)
-                start += len(next_page)
-                if len(next_page) == 0:
-                    break
-            except Exception as e:
-                raise JiraClientError(f"Failed to fetch existing Jira issues: {e}") from e
-        else:
-            logger.warning("Reached max page limit (%d) for JQL query: %s", JIRA_MAX_SEARCH_PAGES, jira_query)
+            logger.debug("Total filtered issues found: %d", len(filtered_issues))
+            return filtered_issues
 
-        logger.debug("Total filtered issues found: %d", len(issues))
-        return issues
+        except Exception as e:
+            raise JiraClientError(f"Failed to fetch existing Jira issues: {e}") from e
 
     def _issue_matches_criteria(self, description: Any, project_name: str, file_name: str, branches: list[str]) -> bool:
         """Check if a Jira issue description matches the project/file/branch criteria.
@@ -251,144 +256,76 @@ class JiraClient:
 
         return extract_text_recursive(adf_content)
 
-    def _search_issues_v3(self, jql_query: str, start_at: int = 0, max_results: int = 50) -> dict[str, Any]:
-        """Search issues using the Jira Cloud search/jql API.
-
-        Uses GET method with query parameters as required by Jira Cloud migration.
+    def _strip_wiki_markup(self, text: str) -> str:
+        """Strip common Jira wiki markup patterns to prevent ADF rendering issues.
 
         Args:
-            jql_query: JQL query string.
-            start_at: Starting index for pagination.
-            max_results: Maximum results per page.
+            text: Text that may contain wiki markup.
 
         Returns:
-            API response dict containing issues.
-
-        Raises:
-            JiraClientError: If the API call fails.
+            Clean text with wiki markup removed.
         """
-        # Use the new search/jql endpoint with GET method as mandated by Jira Cloud
-        url = f"{self.jira_server}/rest/api/3/search/jql"
-        headers = {"Accept": "application/json"}
+        import re
 
-        params: dict[str, str | int] = {
-            "jql": jql_query,
-            "startAt": start_at,
-            "maxResults": max_results,
-            "fields": "key,summary,description,status,components,labels",
+        # Remove bold/italic markup: *text* -> text
+        text = re.sub(r"\*([^*]+)\*", r"\1", text)
+        # Remove extra newlines that were meant for wiki formatting
+        text = re.sub(r" \n\n", "\n\n", text)
+        # Clean up multiple consecutive newlines
+        text = re.sub(r"\n{3,}", "\n\n", text)
+
+        return text.strip()
+
+    def _convert_description_to_adf(self, text: str) -> dict[str, Any]:
+        """Convert plain text description to Atlassian Document Format.
+
+        Args:
+            text: Plain text description.
+
+        Returns:
+            ADF formatted description dict.
+        """
+        # Strip wiki markup to prevent rendering issues in Jira Cloud
+        clean_text = self._strip_wiki_markup(text)
+        return {
+            "type": "doc",
+            "version": 1,
+            "content": [{"type": "paragraph", "content": [{"type": "text", "text": clean_text}]}],
         }
 
-        try:
-            logger.debug("Making Jira search/jql request to: %s", url)
-            logger.debug("JQL: %s", jql_query)
-            logger.debug("Params: %s", params)
-
-            response = requests.get(url, headers=headers, params=params, auth=self.auth, verify=True, timeout=30)
-
-            logger.debug("Response status: %d", response.status_code)
-
-            if response.status_code == 200:
-                result: dict[str, Any] = response.json()
-                logger.debug("Search succeeded, found %d issues", len(result.get("issues", [])))
-
-                # Debug: Show the structure of the first issue to understand the format
-                if result.get("issues") and len(result["issues"]) > 0:
-                    first_issue = result["issues"][0]
-                    logger.debug("First issue structure: keys = %s", list(first_issue.keys()))
-                    if "fields" in first_issue:
-                        logger.debug("Fields structure: %s", list(first_issue["fields"].keys()))
-                    else:
-                        logger.warning("No 'fields' key found. Full issue: %s", first_issue)
-
-                return result
-            else:
-                logger.error("Search failed with status %d: %s", response.status_code, response.text[:200])
-
-                # Provide specific error guidance
-                if response.status_code == 400:
-                    logger.error("Bad Request - Check JQL syntax: %s", jql_query)
-                elif response.status_code == 401:
-                    logger.error("Authentication failed - check JIRA_EMAIL and JIRA_API_TOKEN")
-                elif response.status_code == 403:
-                    logger.error("Permission denied - check if user has access to project %s", self.jira_project_key)
-
-                raise JiraClientError(f"Jira search failed (HTTP {response.status_code}): {response.text}")
-
-        except requests.RequestException as e:
-            logger.error("Request exception during Jira search: %s", e)
-            raise JiraClientError(f"Jira search request failed: {e}") from e
-
-    def _create_issues_v3(self, issues_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Create issues using direct API v3 calls.
+    def _update_issue_description_v3(self, issue_key: str, description_adf: dict[str, Any]) -> None:
+        """Update issue description using API v3 with ADF format.
 
         Args:
-            issues_data: List of issue data dicts to create.
-
-        Returns:
-            List of results with either 'issue' key (success) or 'error' key (failure).
+            issue_key: Issue key (e.g. 'PROJ-123').
+            description_adf: Description in ADF format.
 
         Raises:
             JiraClientError: If the API call fails.
         """
-        results = []
-        for issue_data in issues_data:
-            try:
-                url = f"{self.jira_server}/rest/api/3/issue"
-                headers = {"Accept": "application/json", "Content-Type": "application/json"}
-                # Convert the issue data to the correct format for Jira Cloud
-                payload = {"fields": self._convert_issue_fields_for_cloud(issue_data)}
+        url = f"{self.jira_server}/rest/api/3/issue/{issue_key}"
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        payload = {"fields": {"description": description_adf}}
 
-                logger.debug("Creating Jira issue with payload: %s", payload)
+        try:
+            logger.debug("Updating description for issue %s", issue_key)
+            response = requests.put(
+                url,
+                json=payload,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            )
 
-                response = requests.post(url, json=payload, headers=headers, auth=self.auth, verify=True, timeout=30)
+            logger.debug("Update description response status: %d", response.status_code)
+            if response.status_code not in [200, 204]:
+                logger.error("Update description response text: %s", response.text)
 
-                logger.debug("Create issue response status: %d", response.status_code)
-                if response.status_code not in [200, 201]:
-                    logger.error("Create issue response text: %s", response.text)
-
-                if response.status_code in [200, 201]:
-                    issue_response = response.json()
-                    results.append({"issue": issue_response["key"]})
-                else:
-                    error_msg = response.text
-                    results.append({"error": f"HTTP {response.status_code}: {error_msg}"})
-
-            except requests.RequestException as e:
-                logger.error("Failed to create issue: %s", e)
-                results.append({"error": str(e)})
-
-        return results
-
-    def _convert_issue_fields_for_cloud(self, issue_data: dict[str, Any]) -> dict[str, Any]:
-        """Convert issue fields to Jira Cloud format.
-
-        Args:
-            issue_data: Issue data dict.
-
-        Returns:
-            Converted fields dict for Jira Cloud.
-        """
-        # Convert project ID to proper format
-        converted: dict[str, Any] = {}
-        for field, value in issue_data.items():
-            if field == "project":
-                converted[field] = {"key": str(value)}
-            elif field == "issuetype" or field == "priority":
-                converted[field] = {"name": value["name"]}
-            elif field == "components":
-                converted[field] = [{"name": comp["name"]} for comp in value]
-            elif field == "security":
-                converted[field] = {"id": str(value["id"])}
-            elif field == "description":
-                # Convert plain text description to Atlassian Document Format (ADF)
-                converted[field] = {
-                    "type": "doc",
-                    "version": 1,
-                    "content": [{"type": "paragraph", "content": [{"type": "text", "text": str(value)}]}],
-                }
-            else:
-                converted[field] = value
-        return converted
+            response.raise_for_status()
+        except requests.RequestException as e:
+            logger.error("Failed to update issue description: %s", e)
+            raise JiraClientError(f"Failed to update issue description via API v3: {e}") from e
 
     def _add_comment_v3(self, issue_key: str, comment_body: str) -> None:
         """Add comment to issue using API v3.
@@ -413,7 +350,14 @@ class JiraClient:
 
         try:
             logger.debug("Adding comment to issue %s", issue_key)
-            response = requests.post(url, json=payload, headers=headers, auth=self.auth, verify=True, timeout=30)
+            response = requests.post(
+                url,
+                json=payload,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            )
 
             logger.debug("Comment response status: %d", response.status_code)
             if response.status_code not in [200, 201]:
@@ -440,7 +384,13 @@ class JiraClient:
             headers = {"Accept": "application/json"}
 
             logger.debug("Getting transitions for issue %s", issue_key)
-            response = requests.get(transitions_url, headers=headers, auth=self.auth, verify=True, timeout=30)
+            response = requests.get(
+                transitions_url,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            )
             response.raise_for_status()
             transitions_data = response.json()
 
@@ -469,7 +419,12 @@ class JiraClient:
             payload = {"transition": {"id": transition_id}}
 
             response = requests.post(
-                transition_url, json=payload, headers=headers, auth=self.auth, verify=True, timeout=30
+                transition_url,
+                json=payload,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
             )
 
             logger.debug("Transition response status: %d", response.status_code)
@@ -491,9 +446,6 @@ class JiraClient:
         Raises:
             JiraClientError: If commenting or transitioning fails.
         """
-        try:
-            jira_id = issue["key"]
-            self._add_comment_v3(jira_id, JIRA_CLOSE_COMMENT)
-            self._transition_issue_v3(jira_id, JIRA_CLOSE_TRANSITION)
-        except JIRAError as e:
-            raise JiraClientError(f"Error while closing issue {issue.get('key')}: {e}") from e
+        jira_id = issue["key"]
+        self._add_comment_v3(jira_id, JIRA_CLOSE_COMMENT)
+        self._transition_issue_v3(jira_id, JIRA_CLOSE_TRANSITION)

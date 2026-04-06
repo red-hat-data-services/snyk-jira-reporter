@@ -53,9 +53,9 @@ class SnykClient:
         result_limit: Maximum results per page.
     """
 
-    def __init__(self, api_token: str, api_version: str, result_limit: str) -> None:
+    def __init__(self, api_token: str, api_version: str, result_limit: int) -> None:
         self.api_version = api_version
-        self.result_limit = result_limit
+        self.result_limit = str(result_limit)  # Convert to string for API params
         self.session = _create_session(
             {
                 "authorization": f"token {api_token}",

@@ -11,6 +11,10 @@ class TestJiraClientCreateIssues:
     @patch("snyk_jira_reporter.clients.jira_client.JIRA")
     def test_dry_run_returns_count(self, mock_jira_class, sample_vulnerability) -> None:
         """Test that dry run mode returns count without creating issues."""
+        # Mock JIRA library
+        mock_jira_instance = Mock()
+        mock_jira_class.return_value = mock_jira_instance
+
         client = JiraClient(
             jira_server="https://jira.test.com",
             jira_email="test@example.com",
@@ -24,17 +28,23 @@ class TestJiraClientCreateIssues:
         count = client.create_jira_issues([sample_vulnerability], "12345", "proj-1", "org-slug")
         assert count == 1
         # In dry run mode, no API calls should be made
-        mock_jira_class.assert_called_once()
+        assert not mock_jira_instance.create_issue.called
 
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
     @patch("snyk_jira_reporter.clients.jira_client.requests")
-    @patch("snyk_jira_reporter.clients.jira_client.JIRA")  # Still need this to prevent JIRA constructor errors
-    def test_creates_issues_with_correct_fields(self, _mock_jira_class, mock_requests, sample_vulnerability) -> None:
+    def test_creates_issues_with_correct_fields(self, mock_requests, mock_jira_class, sample_vulnerability) -> None:
         """Test that Jira issues are created with correct field structure."""
-        # Mock successful response for issue creation
+        # Mock JIRA library
+        mock_jira_instance = Mock()
+        mock_issue = Mock()
+        mock_issue.key = "TEST-1"
+        mock_jira_instance.create_issue.return_value = mock_issue
+        mock_jira_class.return_value = mock_jira_instance
+
+        # Mock successful response for description update
         mock_response = Mock()
-        mock_response.status_code = 201
-        mock_response.json.return_value = {"key": "TEST-1"}
-        mock_requests.post.return_value = mock_response
+        mock_response.status_code = 204
+        mock_requests.put.return_value = mock_response
 
         client = JiraClient(
             jira_server="https://jira.test.com",
@@ -48,35 +58,38 @@ class TestJiraClientCreateIssues:
         )
         count = client.create_jira_issues([sample_vulnerability], "12345", "proj-1", "org-slug")
 
-        # Verify the API call was made correctly
-        assert mock_requests.post.called
-        call_args = mock_requests.post.call_args
-        assert "https://jira.test.com/rest/api/3/issue" in call_args[0][0]
-
-        # Check payload structure
-        payload = call_args[1]["json"]
-        fields = payload["fields"]
+        # Verify the JIRA library create_issue was called
+        assert mock_jira_instance.create_issue.called
+        call_args = mock_jira_instance.create_issue.call_args
+        fields = call_args[1]["fields"]
         assert fields["issuetype"]["name"] == "Bug"
         assert fields["security"]["id"] == "10034"
         assert "snyk" in fields["labels"]
+
+        # Verify description update API call was made
+        assert mock_requests.put.called
+
         assert count == 1
 
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
     @patch("snyk_jira_reporter.clients.jira_client.requests")
-    @patch("snyk_jira_reporter.clients.jira_client.JIRA")  # Still need this to prevent JIRA constructor errors
     def test_partial_batch_failure(
-        self, _mock_jira_class, mock_requests, sample_vulnerability, sample_vulnerability_no_cve
+        self, mock_requests, mock_jira_class, sample_vulnerability, sample_vulnerability_no_cve
     ) -> None:
         """Test that partial batch failures return only successful count."""
-        # Mock one success and one failure
-        mock_success = Mock()
-        mock_success.status_code = 201
-        mock_success.json.return_value = {"key": "TEST-1"}
+        # Mock JIRA library - one success and one failure
+        mock_jira_instance = Mock()
+        mock_issue = Mock()
+        mock_issue.key = "TEST-1"
 
-        mock_failure = Mock()
-        mock_failure.status_code = 400
-        mock_failure.text = "Summary field too long"
+        # First call succeeds, second call fails
+        mock_jira_instance.create_issue.side_effect = [mock_issue, Exception("Summary field too long")]
+        mock_jira_class.return_value = mock_jira_instance
 
-        mock_requests.post.side_effect = [mock_success, mock_failure]
+        # Mock successful response for description update (only for successful issue)
+        mock_response = Mock()
+        mock_response.status_code = 204
+        mock_requests.put.return_value = mock_response
 
         client = JiraClient(
             jira_server="https://jira.test.com",
@@ -97,15 +110,13 @@ class TestJiraClientCreateIssues:
 class TestJiraClientGetExisting:
     """Tests for JiraClient.get_existing_jira_for_project."""
 
-    @patch("snyk_jira_reporter.clients.jira_client.requests")
-    @patch("snyk_jira_reporter.clients.jira_client.JIRA")  # Still need this to prevent JIRA constructor errors
-    def test_builds_jql_with_project_key(self, _mock_jira_class, mock_requests) -> None:
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
+    def test_builds_jql_with_project_key(self, mock_jira_class) -> None:
         """Test that JQL uses configurable project key."""
-        # Mock the search response
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"issues": []}
-        mock_requests.get.return_value = mock_response
+        # Mock JIRA library search
+        mock_jira_instance = Mock()
+        mock_jira_instance.search_issues.return_value = []
+        mock_jira_class.return_value = mock_jira_instance
 
         client = JiraClient(
             jira_server="https://jira.test.com",
@@ -120,24 +131,19 @@ class TestJiraClientGetExisting:
         client.get_existing_jira_for_project("org/repo", "file.py", "main")
 
         # Check that the JQL query was constructed correctly
-        assert mock_requests.get.called
-        call_args = mock_requests.get.call_args
-
-        # The JQL should be passed as a parameter
-        params = call_args[1]["params"]
-        jql_query = params["jql"]
+        assert mock_jira_instance.search_issues.called
+        call_args = mock_jira_instance.search_issues.call_args
+        jql_query = call_args[0][0]  # First positional argument
         assert "project = MYPROJECT" in jql_query
         assert 'component = "Component"' in jql_query
 
-    @patch("snyk_jira_reporter.clients.jira_client.requests")
-    @patch("snyk_jira_reporter.clients.jira_client.JIRA")  # Still need this to prevent JIRA constructor errors
-    def test_jql_without_component(self, _mock_jira_class, mock_requests) -> None:
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
+    def test_jql_without_component(self, mock_jira_class) -> None:
         """Test JQL when project has no component mapping."""
-        # Mock the search response
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"issues": []}
-        mock_requests.get.return_value = mock_response
+        # Mock JIRA library search
+        mock_jira_instance = Mock()
+        mock_jira_instance.search_issues.return_value = []
+        mock_jira_class.return_value = mock_jira_instance
 
         client = JiraClient(
             jira_server="https://jira.test.com",
@@ -152,10 +158,7 @@ class TestJiraClientGetExisting:
         client.get_existing_jira_for_project("unknown/repo", "file.py", "main")
 
         # Check that component is not in the JQL query
-        assert mock_requests.get.called
-        call_args = mock_requests.get.call_args
-
-        # The JQL should be passed as a parameter without component
-        params = call_args[1]["params"]
-        jql_query = params["jql"]
+        assert mock_jira_instance.search_issues.called
+        call_args = mock_jira_instance.search_issues.call_args
+        jql_query = call_args[0][0]  # First positional argument
         assert "component" not in jql_query
