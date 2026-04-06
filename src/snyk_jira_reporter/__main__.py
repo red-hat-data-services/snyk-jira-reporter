@@ -27,7 +27,7 @@ def main() -> None:
     parser.add_argument(
         "-l",
         "--limit",
-        type=str,
+        type=int,
         help="The number of results to be returned by the snyk scan",
         nargs="?",
         default=DEFAULT_SNYK_RESULT_LIMIT,
