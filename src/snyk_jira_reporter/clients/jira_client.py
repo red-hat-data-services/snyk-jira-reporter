@@ -90,7 +90,7 @@ class JiraClient:
 
                 # Prepare issue fields for jira library
                 issue_fields = {
-                    "project": {"key": jira_project_id},
+                    "project": {"key": self.jira_project_key},
                     "summary": vulnerability.jira_summary(),
                     "issuetype": {"name": JIRA_BUG_ISSUE_TYPE},
                     "security": {"id": JIRA_SECURITY_FIELD_ID},
@@ -283,14 +283,32 @@ class JiraClient:
             text: Plain text description.
 
         Returns:
-            ADF formatted description dict.
+            ADF formatted description dict with proper paragraph structure.
         """
         # Strip wiki markup to prevent rendering issues in Jira Cloud
         clean_text = self._strip_wiki_markup(text)
+
+        # Split on double newlines to create separate paragraphs
+        paragraphs = [p.strip() for p in clean_text.split("\n\n") if p.strip()]
+
+        content = []
+        for paragraph in paragraphs:
+            if "\n" in paragraph:
+                # Handle single newlines within paragraphs as hard breaks
+                lines = [line.strip() for line in paragraph.split("\n") if line.strip()]
+                para_content = []
+                for i, line in enumerate(lines):
+                    para_content.append({"type": "text", "text": line})
+                    if i < len(lines) - 1:
+                        para_content.append({"type": "hardBreak"})
+                content.append({"type": "paragraph", "content": para_content})
+            else:
+                content.append({"type": "paragraph", "content": [{"type": "text", "text": paragraph}]})
+
         return {
             "type": "doc",
             "version": 1,
-            "content": [{"type": "paragraph", "content": [{"type": "text", "text": clean_text}]}],
+            "content": content,
         }
 
     def _update_issue_description_v3(self, issue_key: str, description_adf: dict[str, Any]) -> None:
