@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/red-hat-data-services/snyk-jira-reporter/config/jira_components_mapping.schema.json",
+  "title": "Jira Components Mapping Configuration",
+  "description": "Maps GitHub repository names to Jira component names for issue assignment",
+  "type": "object",
+  "patternProperties": {
+    "^[A-Za-z0-9\\s-]+$": {
+      "type": "array",
+      "description": "Jira component name with list of associated GitHub repositories",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$",
+        "description": "GitHub repository in format 'organization/repository-name'"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "Model Serving": [
+        "red-hat-data-services/kserve",
+        "red-hat-data-services/modelmesh-serving"
+      ],
+      "AI Core Dashboard": [
+        "red-hat-data-services/odh-dashboard"
+      ]
+    }
+  ]
+}
