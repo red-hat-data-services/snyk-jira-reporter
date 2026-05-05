@@ -58,6 +58,9 @@ class JiraClient:
         # Use basic_auth for Jira Cloud API token authentication
         self.jira = JIRA(server=self.jira_server, basic_auth=(jira_email, jira_api_token), options={"verify": True})
 
+        # Cache for project components to avoid repeated API calls
+        self._project_components_cache: list[str] | None = None
+
     def create_jira_issues(
         self,
         vulnerabilities_to_create: list[VulnerabilityData],
@@ -341,7 +344,7 @@ class JiraClient:
                 logger.error("Update description response text: %s", response.text)
 
             response.raise_for_status()
-        except requests.RequestException as e:
+        except Exception as e:
             logger.error("Failed to update issue description: %s", e)
             raise JiraClientError(f"Failed to update issue description via API v3: {e}") from e
 
@@ -382,7 +385,7 @@ class JiraClient:
                 logger.error("Comment response text: %s", response.text)
 
             response.raise_for_status()
-        except requests.RequestException as e:
+        except Exception as e:
             logger.error("Failed to add comment: %s", e)
             raise JiraClientError(f"Failed to add comment via API v3: {e}") from e
 
@@ -451,7 +454,7 @@ class JiraClient:
 
             response.raise_for_status()
 
-        except requests.RequestException as e:
+        except Exception as e:
             logger.error("Failed to transition issue: %s", e)
             raise JiraClientError(f"Failed to transition issue via API v3: {e}") from e
 
@@ -467,3 +470,237 @@ class JiraClient:
         jira_id = issue["key"]
         self._add_comment_v3(jira_id, JIRA_CLOSE_COMMENT)
         self._transition_issue_v3(jira_id, JIRA_CLOSE_TRANSITION)
+
+    def list_project_components(self) -> list[str]:
+        """Get all valid component names for the Jira project.
+
+        Returns:
+            List of component names available in the project.
+
+        Raises:
+            JiraClientError: If the API call fails.
+        """
+        if self._project_components_cache is not None:
+            return self._project_components_cache
+
+        url = f"{self.jira_server}/rest/api/3/project/{self.jira_project_key}/components"
+        headers = {"Accept": "application/json"}
+
+        try:
+            logger.debug("Fetching components for project %s", self.jira_project_key)
+            response = requests.get(
+                url,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            )
+
+            logger.debug("Component list response status: %d", response.status_code)
+            if response.status_code != 200:
+                logger.error("Component list response text: %s", response.text)
+
+            response.raise_for_status()
+            components_data = response.json()
+
+            # Extract component names from response
+            component_names = [component["name"] for component in components_data]
+            self._project_components_cache = component_names
+
+            logger.info("Found %d components in project %s", len(component_names), self.jira_project_key)
+            return component_names
+
+        except Exception as e:
+            logger.error("Failed to fetch project components: %s", e)
+            raise JiraClientError(f"Failed to fetch project components via API v3: {e}") from e
+
+    def validate_component_exists(self, component_name: str) -> bool:
+        """Check if a component exists in the Jira project.
+
+        Args:
+            component_name: Name of the component to validate.
+
+        Returns:
+            True if component exists, False otherwise.
+
+        Raises:
+            JiraClientError: If the API call fails.
+        """
+        valid_components = self.list_project_components()
+        return component_name in valid_components
+
+    def get_component_creation_url(self) -> str:
+        """Generate Jira URL for manual component creation.
+
+        Returns:
+            URL for creating components in Jira project administration.
+        """
+        # URL for project component management in Jira Cloud
+        return f"{self.jira_server}/plugins/servlet/project-config/{self.jira_project_key}/administer-components"
+
+    def search_issues_by_label(self, label: str) -> list[dict[str, Any]]:
+        """Search for Jira issues with a specific label.
+
+        Uses direct REST API v3 calls to avoid deprecated API v2 issues
+        with the JIRA Python library.
+
+        Args:
+            label: Label to search for (e.g. 'unmapped-repo').
+
+        Returns:
+            List of Jira issue dicts matching the label.
+
+        Raises:
+            JiraClientError: If the Jira search fails.
+        """
+        jira_query = f'project = {self.jira_project_key} AND labels = "{label}"'
+
+        logger.info("Searching for issues with label '%s' using JQL: %s", label, jira_query)
+
+        try:
+            # Use direct REST API v3 call since the JIRA library uses deprecated API v2
+            url = f"{self.jira_server}/rest/api/3/search/jql"
+            headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+            # Paginated search to handle large result sets
+            all_issues = []
+            max_results = 100
+            start_at = 0
+
+            while True:
+                params: dict[str, str | int | list[str]] = {
+                    "jql": jira_query,
+                    "fields": ["key", "summary", "description", "status", "components", "labels"],
+                    "maxResults": max_results,
+                    "startAt": start_at,
+                }
+
+                logger.debug("Making API v3 search request: startAt=%d, maxResults=%d", start_at, max_results)
+                response = requests.get(
+                    url, headers=headers, auth=self.auth, params=params, timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS
+                )
+                response.raise_for_status()
+
+                data = response.json()
+                issues = data.get("issues", [])
+                all_issues.extend(issues)
+
+                logger.debug("Retrieved %d issues in this batch", len(issues))
+
+                # Check if we need to continue pagination
+                if len(issues) < max_results or start_at + max_results >= data.get("maxResults", 0):
+                    break
+
+                start_at += max_results
+
+            logger.info("Found %d issues with label '%s'", len(all_issues), label)
+            return all_issues
+
+        except Exception as e:
+            logger.error("Failed to search for issues with label '%s': %s", label, e)
+            raise JiraClientError(f"Failed to search issues by label via REST API v3: {e}") from e
+
+    def update_issue_component(self, issue_key: str, component_name: str) -> None:
+        """Update the component field of a Jira issue.
+
+        Uses direct REST API for simple field updates, consistent with other
+        field update operations and ADF format handling in this codebase.
+
+        Args:
+            issue_key: Issue key (e.g. 'PROJ-123').
+            component_name: Name of the component to assign.
+
+        Raises:
+            JiraClientError: If the API call fails.
+        """
+        if self.dry_run:
+            logger.info("DRY RUN: Would update issue %s component to '%s'", issue_key, component_name)
+            return
+
+        url = f"{self.jira_server}/rest/api/3/issue/{issue_key}"
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        payload = {"fields": {"components": [{"name": component_name}]}}
+
+        try:
+            logger.debug("Updating component for issue %s to '%s'", issue_key, component_name)
+            response = requests.put(
+                url,
+                json=payload,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            )
+
+            logger.debug("Update component response status: %d", response.status_code)
+            if response.status_code not in [200, 204]:
+                logger.error("Update component response text: %s", response.text)
+
+            response.raise_for_status()
+            logger.info("Successfully updated issue %s component to '%s'", issue_key, component_name)
+
+        except Exception as e:
+            logger.error("Failed to update issue component: %s", e)
+            raise JiraClientError(f"Failed to update issue component via API v3: {e}") from e
+
+    def update_issue_labels(self, issue_key: str, labels_to_add: list[str], labels_to_remove: list[str]) -> None:
+        """Update the labels of a Jira issue.
+
+        Hybrid approach: JIRA library for safe field reading, REST API for controlled
+        label manipulation. This pattern handles read-modify-write operations safely.
+
+        Args:
+            issue_key: Issue key (e.g. 'PROJ-123').
+            labels_to_add: Labels to add to the issue.
+            labels_to_remove: Labels to remove from the issue.
+
+        Raises:
+            JiraClientError: If the API call fails.
+        """
+        if self.dry_run:
+            logger.info(
+                "DRY RUN: Would update issue %s labels: add %s, remove %s",
+                issue_key,
+                labels_to_add,
+                labels_to_remove,
+            )
+            return
+
+        # First get current labels
+        try:
+            issue = self.jira.issue(issue_key, fields="labels")
+            current_labels = list(getattr(issue.fields, "labels", []))
+        except Exception as e:
+            logger.error("Failed to fetch current labels for issue %s: %s", issue_key, e)
+            raise JiraClientError(f"Failed to fetch issue labels: {e}") from e
+
+        # Calculate new labels set
+        new_labels = set(current_labels)
+        new_labels.update(labels_to_add)
+        new_labels.difference_update(labels_to_remove)
+
+        url = f"{self.jira_server}/rest/api/3/issue/{issue_key}"
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        payload = {"fields": {"labels": list(new_labels)}}
+
+        try:
+            logger.debug("Updating labels for issue %s: add %s, remove %s", issue_key, labels_to_add, labels_to_remove)
+            response = requests.put(
+                url,
+                json=payload,
+                headers=headers,
+                auth=self.auth,
+                verify=True,
+                timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            )
+
+            logger.debug("Update labels response status: %d", response.status_code)
+            if response.status_code not in [200, 204]:
+                logger.error("Update labels response text: %s", response.text)
+
+            response.raise_for_status()
+            logger.info("Successfully updated issue %s labels", issue_key)
+
+        except Exception as e:
+            logger.error("Failed to update issue labels: %s", e)
+            raise JiraClientError(f"Failed to update issue labels via API v3: {e}") from e

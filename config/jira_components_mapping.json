@@ -1,6 +1,7 @@
 {
     "Model Serving": [
         "red-hat-data-services/kserve",
+        "red-hat-data-services/kserve-autogluon-server",
         "red-hat-data-services/modelmesh-serving",
         "red-hat-data-services/odh-model-controller",
         "red-hat-data-services/modelmesh",
@@ -47,7 +48,8 @@
         "red-hat-data-services/caikit-tgis-backend",
         "red-hat-data-services/caikit-nlp",
         "red-hat-data-services/caikit-tgis-serving",
-        "red-hat-data-services/mlserver"
+        "red-hat-data-services/mlserver",
+        "red-hat-data-services/vllm"
     ],
     "Workload Orchestration": [
         "red-hat-data-services/distributed-workloads",
@@ -71,7 +73,8 @@
         "red-hat-data-services/model-registry-operator"
     ],
     "Feature Store": [
-        "red-hat-data-services/feast"
+        "red-hat-data-services/feast",
+        "opendatahub-io/feast"
     ],
     "Llama Stack Core": [
         "red-hat-data-services/llama-stack-k8s-operator",
