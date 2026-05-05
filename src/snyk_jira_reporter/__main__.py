@@ -15,6 +15,7 @@ from snyk_jira_reporter.config.constants import (
 )
 from snyk_jira_reporter.config.settings import AppSettings
 from snyk_jira_reporter.exceptions.exceptions import SnykJiraReporterError
+from snyk_jira_reporter.services.component_resolver import generate_component_report, resolve_unmapped_issues
 from snyk_jira_reporter.services.vulnerability_service import process_projects
 from snyk_jira_reporter.utils.file_loader import load_component_mapping, load_mapping
 
@@ -49,6 +50,16 @@ def main() -> None:
         default="critical,high",
     )
     parser.add_argument("--disable-dep-analysis", action="store_true", dest="disable_dep_analysis")
+    parser.add_argument(
+        "--resolve-unmapped",
+        action="store_true",
+        help="Resolve unmapped-repo issues by updating components based on current mappings",
+    )
+    parser.add_argument(
+        "--generate-component-report",
+        action="store_true",
+        help="Generate component mapping status report for README and exit",
+    )
     args = parser.parse_args()
 
     try:
@@ -74,12 +85,45 @@ def main() -> None:
         if settings.dry_run:
             logging.info("DRY_RUN is enabled")
 
+        # Handle special modes that don't need full client initialization
+        if args.generate_component_report or args.resolve_unmapped:
+            # These modes only need Jira client, not Snyk client
+            jira_client = JiraClient(
+                jira_server=settings.jira_server,
+                jira_email=settings.jira_email,
+                jira_api_token=settings.jira_api_token,
+                jira_label_prefix=settings.jira_label_prefix,
+                jira_project_id=settings.jira_project_id,
+                jira_project_key=settings.jira_project_key,
+                component_mapping=components_mapping,
+                dry_run=settings.dry_run,
+            )
+
+            if args.generate_component_report:
+                logging.info("Generating component mapping status report...")
+                try:
+                    result_code = generate_component_report(jira_client, components_mapping)
+                    sys.exit(result_code)
+                except Exception as e:
+                    logging.error("Report generation failed: %s", e)
+                    sys.exit(1)
+
+            elif args.resolve_unmapped:
+                logging.info("Resolving unmapped issues...")
+                try:
+                    resolved_count = resolve_unmapped_issues(jira_client)
+                    print(f"✅ Resolved {resolved_count} unmapped issues")
+                    sys.exit(0)
+                except SnykJiraReporterError as e:
+                    logging.error("Unmapped issue resolution failed: %s", e)
+                    sys.exit(1)
+
+        # Proceed with normal vulnerability processing - initialize both clients
         snyk_client = SnykClient(
             api_token=settings.snyk_api_token,
             api_version=args.version,
             result_limit=args.limit,
         )
-        projects = snyk_client.list_projects(settings.snyk_org_id)
 
         jira_client = JiraClient(
             jira_server=settings.jira_server,
@@ -91,6 +135,8 @@ def main() -> None:
             component_mapping=components_mapping,
             dry_run=settings.dry_run,
         )
+
+        projects = snyk_client.list_projects(settings.snyk_org_id)
 
         process_projects(
             jira_client,

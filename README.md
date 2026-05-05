@@ -395,4 +395,15 @@ git commit -m "Add my-new-repo to Component Name mapping"
 
 No need for manual testing - the validator ensures your config is correct!
 
-Need help? Check the troubleshooting section above or reach out to the team! 
+Need help? Check the troubleshooting section above or reach out to the team!
+
+## Repository Component Mapping
+
+*Last updated: 2026-05-05*
+
+**Status**: 1 repositories need mapping
+
+**[View detailed unmapped repositories report →](UNMAPPED_REPOSITORIES.md)**
+
+---
+

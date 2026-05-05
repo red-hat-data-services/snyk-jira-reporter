@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Validate configuration files against their JSON schemas."""
 
+import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -47,6 +49,12 @@ def validate_file(config_file: Path, schema_file: Path) -> tuple[bool, str | Non
 
 def main() -> int:
     """Main validation function."""
+    parser = argparse.ArgumentParser(description="Validate snyk-jira-reporter configuration")
+    parser.parse_args()
+
+    # Set up logging
+    logging.basicConfig(level=logging.WARNING)  # Reduce noise for validation
+
     root_dir = Path(__file__).parent.parent
     config_dir = root_dir / "config"
 
@@ -64,6 +72,7 @@ def main() -> int:
     print("Validating configuration files...")
     print("-" * 50)
 
+    # Run JSON schema validation
     for config_file, schema_file, description in validations:
         if not config_file.exists():
             print(f"❌ {description}: Config file not found: {config_file}")
@@ -85,10 +94,10 @@ def main() -> int:
     print("-" * 50)
 
     if all_valid:
-        print("All configuration files are valid!")
+        print("All validation checks passed!")
         return 0
     else:
-        print("Some configuration files have validation errors.")
+        print("Some validation checks failed.")
         return 1
 
 

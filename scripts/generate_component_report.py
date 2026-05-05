@@ -1,0 +1,336 @@
+#!/usr/bin/env python3
+"""Generate unmapped repositories report and update README with link."""
+
+import argparse
+import logging
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+try:
+    from pydantic import ValidationError
+
+    from snyk_jira_reporter.clients.jira_client import JiraClient
+    from snyk_jira_reporter.config.settings import AppSettings
+    from snyk_jira_reporter.exceptions.exceptions import JiraClientError
+    from snyk_jira_reporter.services.component_resolver import _extract_project_from_uid, _extract_uid_from_description
+    from snyk_jira_reporter.utils.file_loader import load_component_mapping
+except ImportError as e:
+    print(f"Error importing application modules: {e}")
+    print("Make sure to install the application dependencies: pip install -e .")
+    sys.exit(1)
+
+
+def get_unmapped_repositories(jira_client: JiraClient) -> list[str]:
+    """Get list of currently unmapped repositories from Jira issues.
+
+    Args:
+        jira_client: JiraClient instance.
+
+    Returns:
+        List of repository names that are currently unmapped.
+    """
+    try:
+        # Find all unmapped issues
+        unmapped_issues = jira_client.search_issues_by_label("unmapped-repo")
+    except JiraClientError as e:
+        logging.error("Failed to search for unmapped issues: %s", e)
+        # Check if this looks like an authentication/access issue
+        error_msg = str(e).lower()
+        if "404" in error_msg or "not found" in error_msg:
+            logging.error("This appears to be a Jira authentication or access issue.")
+            logging.error("Please ensure you have:")
+            logging.error("1. Set JIRA_SERVER, JIRA_EMAIL, JIRA_API_TOKEN environment variables")
+            logging.error("2. Access to the JIRA project specified in JIRA_PROJECT_KEY")
+        return []
+
+    unmapped_repos = set()
+
+    for issue in unmapped_issues:
+        description = issue["fields"].get("description", "")
+
+        # Extract repository from issue description UID
+        uid = _extract_uid_from_description(description)
+        if uid:
+            project_name = _extract_project_from_uid(uid)
+            if project_name:
+                unmapped_repos.add(project_name)
+
+    return sorted(list(unmapped_repos))
+
+
+def generate_unmapped_file_content(unmapped_repos: list[str], available_components: list[str]) -> str:
+    """Generate content for the UNMAPPED_REPOSITORIES.md file.
+
+    Args:
+        unmapped_repos: List of unmapped repository names.
+        available_components: List of available Jira components.
+
+    Returns:
+        Markdown formatted content for the unmapped repositories file.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+
+    if not unmapped_repos:
+        return f"""# Unmapped Repositories
+
+*Auto-updated after each weekly scan - {timestamp}*
+
+**All repositories are currently mapped to components!**
+
+No repositories currently need component mapping.
+
+---
+
+## About This Report
+
+This file is automatically updated by the Snyk-Jira integration to track repositories that don't have component mappings. When new repositories are discovered that lack component assignments, they appear here with guidance on how to add them to the appropriate component mapping.
+
+"""
+
+    repo_list = "\n".join(f"- `{repo}`" for repo in unmapped_repos)
+    components_list = ", ".join(f"`{comp}`" for comp in sorted(available_components))
+
+    return f"""# Unmapped Repositories
+
+*Auto-updated after each weekly scan - {timestamp}*
+
+**{len(unmapped_repos)} repositories need component mapping**
+
+The following repositories were discovered in Snyk but don't have component assignments in the Jira integration:
+
+{repo_list}
+
+## How to Fix
+
+Add your repository to the appropriate component in [`config/jira_components_mapping.json`](config/jira_components_mapping.json):
+
+```json
+{{
+  "Your Component Name": [
+    "existing-repo-1",
+    "existing-repo-2",
+    "your-repo-name"  // ← Add here
+  ]
+}}
+```
+
+### Available Components
+
+{components_list}
+
+### Steps to Add Mapping
+
+1. **Identify the right component**: Review the existing mappings to find where your repository belongs
+2. **Edit the config**: Add your repository using the format `"org-name/repo-name"`
+3. **Validate**: Run `python scripts/validate_config.py` to check for errors
+4. **Test**: Use `DRY_RUN=true python -m snyk_jira_reporter --disable-dep-analysis` to verify
+5. **Resolve existing issues**: Run `python -m snyk_jira_reporter --resolve-unmapped` to update any existing unmapped Jira issues
+
+### Validation
+
+The configuration includes automatic schema validation:
+- ✓ Valid JSON format
+- ✓ Correct repository format (`org/repo-name`)
+- ✓ No duplicate repositories
+- ✓ Valid component names
+
+Run the validator locally before committing:
+```bash
+python scripts/validate_config.py
+```
+
+---
+
+*This file is automatically generated. Do not edit manually.*
+
+"""
+
+
+def generate_readme_section(unmapped_count: int) -> str:
+    """Generate simple README section that links to the unmapped repositories file.
+
+    Args:
+        unmapped_count: Number of unmapped repositories.
+
+    Returns:
+        Markdown formatted README section with link.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+
+    if unmapped_count == 0:
+        status = "All repositories mapped"
+    else:
+        status = f"{unmapped_count} repositories need mapping"
+
+    return f"""## Repository Component Mapping
+
+*Last updated: {timestamp}*
+
+**Status**: {status}
+
+**[View detailed unmapped repositories report →](UNMAPPED_REPOSITORIES.md)**
+
+---
+
+"""
+
+
+def write_unmapped_file(content: str) -> None:
+    """Write the UNMAPPED_REPOSITORIES.md file.
+
+    Args:
+        content: Markdown content for the unmapped repositories file.
+    """
+    unmapped_path = Path(__file__).parent.parent / "UNMAPPED_REPOSITORIES.md"
+
+    with open(unmapped_path, "w") as f:
+        f.write(content)
+
+    logging.info("Updated UNMAPPED_REPOSITORIES.md")
+
+
+def update_readme_file(readme_section: str) -> None:
+    """Update README.md file with a simple link to the unmapped repositories file.
+
+    Args:
+        readme_section: Simple markdown section with link to unmapped repositories file.
+    """
+    readme_path = Path(__file__).parent.parent / "README.md"
+
+    if not readme_path.exists():
+        logging.warning("README.md file not found at %s", readme_path)
+        return
+
+    # Read current README
+    with open(readme_path) as f:
+        content = f.read()
+
+    # Find and replace the repository component mapping section
+    # Look for both old and new section markers for backward compatibility
+    old_marker = "## Unmapped Repositories"
+    new_marker = "## Repository Component Mapping"
+
+    start_marker = new_marker
+    start_index = content.find(new_marker)
+
+    # If new marker not found, look for old marker
+    if start_index == -1:
+        start_marker = old_marker
+        start_index = content.find(old_marker)
+
+    end_marker = "\n## "  # Next section starts with ##
+
+    if start_index == -1:
+        # Section doesn't exist, append to end
+        updated_content = content.rstrip() + "\n\n" + readme_section.rstrip() + "\n"
+    else:
+        # Find end of section
+        end_search_start = start_index + len(start_marker)
+        end_index = content.find(end_marker, end_search_start)
+
+        if end_index == -1:
+            # Section goes to end of file
+            updated_content = content[:start_index] + readme_section
+        else:
+            # Replace section content
+            updated_content = content[:start_index] + readme_section + content[end_index + 1 :]
+
+    # Write updated README
+    with open(readme_path, "w") as f:
+        f.write(updated_content)
+
+    logging.info("Updated README.md with link to unmapped repositories file")
+
+
+def main() -> int:
+    """Main function."""
+    parser = argparse.ArgumentParser(description="Generate unmapped repositories report and update README")
+    parser.add_argument("--output-json", help="Output unmapped repositories to JSON file (optional)")
+
+    args = parser.parse_args()
+
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+
+    try:
+        # Load settings and create Jira client
+        settings = AppSettings()
+
+        # Validate required Jira settings early
+        if not settings.jira_server or not settings.jira_email or not settings.jira_api_token:
+            logging.error("Missing required Jira credentials:")
+            logging.error("- JIRA_SERVER: %s", "✓ Set" if settings.jira_server else "✗ Missing")
+            logging.error("- JIRA_EMAIL: %s", "✓ Set" if settings.jira_email else "✗ Missing")
+            logging.error("- JIRA_API_TOKEN: %s", "✓ Set" if settings.jira_api_token else "✗ Missing")
+            logging.error("Please set these environment variables to access Jira")
+            return 1
+
+        component_mapping = load_component_mapping(settings.component_mapping_file_path)
+
+        jira_client = JiraClient(
+            jira_server=settings.jira_server,
+            jira_email=settings.jira_email,
+            jira_api_token=settings.jira_api_token,
+            jira_label_prefix=settings.jira_label_prefix,
+            jira_project_id=settings.jira_project_id,
+            jira_project_key=settings.jira_project_key,
+            component_mapping=component_mapping,
+            dry_run=True,  # Read-only operations
+        )
+
+        # Get unmapped repositories
+        unmapped_repos = get_unmapped_repositories(jira_client)
+        logging.info("Found %d unmapped repositories", len(unmapped_repos))
+
+        if len(unmapped_repos) == 0:
+            logging.info("Note: This script finds unmapped repos by searching existing Jira issues")
+            logging.info("If vulnerability processing was run in DRY_RUN mode, no actual issues exist to find")
+            logging.info("Run the main vulnerability processor without DRY_RUN to create real issues first")
+
+        # Get available components
+        try:
+            available_components = jira_client.list_project_components()
+        except JiraClientError:
+            available_components = list(set(component_mapping.values()))
+            available_components = [c for c in available_components if c]  # Remove empty strings
+
+        # Generate and write the detailed unmapped repositories file
+        unmapped_content = generate_unmapped_file_content(unmapped_repos, available_components)
+        write_unmapped_file(unmapped_content)
+
+        # Generate and update the simple README section with link
+        readme_section = generate_readme_section(len(unmapped_repos))
+        update_readme_file(readme_section)
+
+        # Output to JSON if requested
+        if args.output_json:
+            import json
+
+            output_data = {
+                "timestamp": datetime.now().isoformat(),
+                "unmapped_repositories": unmapped_repos,
+                "count": len(unmapped_repos),
+            }
+            with open(args.output_json, "w") as f:
+                json.dump(output_data, f, indent=2)
+            logging.info("Wrote unmapped repositories to %s", args.output_json)
+
+        print(f"Generated component mapping report: {len(unmapped_repos)} unmapped repositories")
+        print(f"- Created UNMAPPED_REPOSITORIES.md with detailed information")
+        print(f"- Updated README.md with link to the detailed report")
+        return 0
+
+    except (ValidationError, JiraClientError) as e:
+        logging.error("Failed to generate report: %s", e)
+        return 1
+    except Exception as e:
+        logging.error("Unexpected error: %s", e)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
