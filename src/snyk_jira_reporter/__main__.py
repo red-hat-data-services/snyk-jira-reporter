@@ -1,156 +1,54 @@
 """Entry point for snyk-jira-reporter CLI."""
 
-import argparse
 import logging
 import sys
 
-from pydantic import ValidationError
-
-from snyk_jira_reporter.clients.jira_client import JiraClient
-from snyk_jira_reporter.clients.snyk_client import SnykClient
-from snyk_jira_reporter.config.constants import (
-    DEFAULT_SNYK_REST_API_VERSION,
-    DEFAULT_SNYK_RESULT_LIMIT,
-    SEVERITY_PRIORITY_MAP,
-)
-from snyk_jira_reporter.config.settings import AppSettings
-from snyk_jira_reporter.exceptions.exceptions import SnykJiraReporterError
-from snyk_jira_reporter.services.component_resolver import generate_component_report, resolve_unmapped_issues
-from snyk_jira_reporter.services.vulnerability_service import process_projects
-from snyk_jira_reporter.utils.file_loader import load_component_mapping, load_mapping
+from snyk_jira_reporter.cli.application import SnykJiraReporterApp
+from snyk_jira_reporter.cli.args import parse_arguments
+from snyk_jira_reporter.cli.config_loader import load_configuration, load_configuration_files
+from snyk_jira_reporter.exceptions.exceptions import CLIError, ConfigurationError
 
 
-def main() -> None:
-    """Main entry point for the Snyk to Jira automation script."""
-    logging.basicConfig(level=logging.INFO)
+def main() -> int:
+    """Main entry point for the Snyk to Jira automation script.
 
-    parser = argparse.ArgumentParser(description="Snyk to Jira automation script")
-    parser.add_argument(
-        "-l",
-        "--limit",
-        type=int,
-        help="The number of results to be returned by the snyk scan",
-        nargs="?",
-        default=DEFAULT_SNYK_RESULT_LIMIT,
-    )
-    parser.add_argument(
-        "-v",
-        "--version",
-        type=str,
-        help="The rest api version of snyk",
-        nargs="?",
-        default=DEFAULT_SNYK_REST_API_VERSION,
-    )
-    parser.add_argument(
-        "-s",
-        "--allowed-severity",
-        type=str,
-        help="A comma separated list of severities of the vulnerabilities to record. eg: critical,high",
-        nargs="?",
-        default="critical,high",
-    )
-    parser.add_argument("--disable-dep-analysis", action="store_true", dest="disable_dep_analysis")
-    parser.add_argument(
-        "--resolve-unmapped",
-        action="store_true",
-        help="Resolve unmapped-repo issues by updating components based on current mappings",
-    )
-    parser.add_argument(
-        "--generate-component-report",
-        action="store_true",
-        help="Generate component mapping status report for README and exit",
-    )
-    args = parser.parse_args()
+    Returns:
+        Exit code (0 for success, 1 for fatal error, 2 for configuration error).
+    """
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting snyk-jira-reporter")
 
     try:
-        settings = AppSettings()  # type: ignore[call-arg]
-    except ValidationError as e:
-        logging.error("Missing required environment variables:\n%s", e)
-        sys.exit(2)
-
-    try:
-        components_mapping = load_component_mapping(settings.component_mapping_file_path)
-        exclude_files_mapping = load_mapping(settings.exclude_files_file_path)
-
-        allowed_severity_list = [x.strip() for x in args.allowed_severity.split(",")]
-        invalid_severities = [s for s in allowed_severity_list if s not in SEVERITY_PRIORITY_MAP]
-        if invalid_severities:
-            logging.error(
-                "Invalid severity level(s): %s. Valid values: %s",
-                ", ".join(invalid_severities),
-                ", ".join(SEVERITY_PRIORITY_MAP),
-            )
-            sys.exit(2)
+        # Load configuration and parse arguments
+        settings = load_configuration()
+        cli_args = parse_arguments()
+        components_mapping, exclude_files_mapping = load_configuration_files(settings)
 
         if settings.dry_run:
-            logging.info("DRY_RUN is enabled")
+            logger.info("DRY_RUN mode is enabled")
 
-        # Handle special modes that don't need full client initialization
-        if args.generate_component_report or args.resolve_unmapped:
-            # These modes only need Jira client, not Snyk client
-            jira_client = JiraClient(
-                jira_server=settings.jira_server,
-                jira_email=settings.jira_email,
-                jira_api_token=settings.jira_api_token,
-                jira_label_prefix=settings.jira_label_prefix,
-                jira_project_id=settings.jira_project_id,
-                jira_project_key=settings.jira_project_key,
-                component_mapping=components_mapping,
-                dry_run=settings.dry_run,
-            )
-
-            if args.generate_component_report:
-                logging.info("Generating component mapping status report...")
-                try:
-                    result_code = generate_component_report(jira_client, components_mapping)
-                    sys.exit(result_code)
-                except Exception as e:
-                    logging.error("Report generation failed: %s", e)
-                    sys.exit(1)
-
-            elif args.resolve_unmapped:
-                logging.info("Resolving unmapped issues...")
-                try:
-                    resolved_count = resolve_unmapped_issues(jira_client)
-                    print(f"✅ Resolved {resolved_count} unmapped issues")
-                    sys.exit(0)
-                except SnykJiraReporterError as e:
-                    logging.error("Unmapped issue resolution failed: %s", e)
-                    sys.exit(1)
-
-        # Proceed with normal vulnerability processing - initialize both clients
-        snyk_client = SnykClient(
-            api_token=settings.snyk_api_token,
-            api_version=args.version,
-            result_limit=args.limit,
+        # Execute the complete workflow
+        app = SnykJiraReporterApp(
+            settings=settings,
+            cli_args=cli_args,
+            components_mapping=components_mapping,
+            exclude_files_mapping=exclude_files_mapping,
         )
 
-        jira_client = JiraClient(
-            jira_server=settings.jira_server,
-            jira_email=settings.jira_email,
-            jira_api_token=settings.jira_api_token,
-            jira_label_prefix=settings.jira_label_prefix,
-            jira_project_id=settings.jira_project_id,
-            jira_project_key=settings.jira_project_key,
-            component_mapping=components_mapping,
-            dry_run=settings.dry_run,
-        )
+        return app.execute()
 
-        projects = snyk_client.list_projects(settings.snyk_org_id)
-
-        process_projects(
-            jira_client,
-            snyk_client,
-            settings.snyk_org_id,
-            projects,
-            exclude_files_mapping,
-            args.disable_dep_analysis,
-            allowed_severity_list,
-        )
-    except SnykJiraReporterError as e:
-        logging.error("Fatal error: %s", e)
-        sys.exit(1)
+    except ConfigurationError as e:
+        logger.error("Configuration error: %s", e)
+        return 2
+    except CLIError as e:
+        logger.error("Command-line error: %s", e)
+        return 2
+    except Exception as e:
+        logger.exception("Unexpected error: %s", e)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

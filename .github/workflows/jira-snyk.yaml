@@ -40,3 +40,12 @@ jobs:
 
       - name: execute py script for automation
         run: python -m snyk_jira_reporter --disable-dep-analysis
+
+      - name: commit and push report updates
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update component mapping reports [skip ci]"
+          file_pattern: "UNMAPPED_REPOSITORIES.md README.md"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          skip_dirty_check: false

@@ -19,3 +19,7 @@ class ConfigurationError(SnykJiraReporterError):
 
 class FileLoadError(SnykJiraReporterError):
     """Raised when a configuration file cannot be loaded."""
+
+
+class CLIError(SnykJiraReporterError):
+    """Raised when command-line arguments are invalid."""
