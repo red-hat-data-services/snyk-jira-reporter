@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "snyk-jira-reporter"
 version = "1.0.0"
 description = "Automated Snyk vulnerability to Jira ticket reporter"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "jira>=3.10.5,<4.0",
     "jsonschema>=4.0,<5.0",

@@ -1,16 +1,15 @@
 # Unmapped Repositories
 
-*Auto-updated after each weekly scan - 2026-05-05*
+*Auto-updated after each weekly scan - 2026-05-07*
 
-**1 repositories need component mapping**
+**0 repositories need component mapping**
 
-The following repositories were discovered in Snyk but don't have component assignments in the Jira integration:
-
-- `red-hat-data-services/kserve-autogluon-server`
+All repositories are properly mapped!
 
 ## How to Fix
 
-Add your repository to the appropriate component in [`config/jira_components_mapping.json`](config/jira_components_mapping.json):
+Add your repository to the appropriate component in
+[`config/jira_components_mapping.json`](config/jira_components_mapping.json):
 
 ```json
 {
@@ -32,7 +31,8 @@ Add your repository to the appropriate component in [`config/jira_components_map
 2. **Edit the config**: Add your repository using the format `"org-name/repo-name"`
 3. **Validate**: Run `python scripts/validate_config.py` to check for errors
 4. **Test**: Use `DRY_RUN=true python -m snyk_jira_reporter --disable-dep-analysis` to verify
-5. **Resolve existing issues**: Run `python -m snyk_jira_reporter --resolve-unmapped` to update any existing unmapped Jira issues
+5. **Resolve existing issues**: Run `python -m snyk_jira_reporter --resolve-unmapped` to update any
+   existing unmapped Jira issues
 
 ### Validation
 
