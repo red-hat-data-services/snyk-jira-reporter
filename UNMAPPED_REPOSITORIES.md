@@ -31,8 +31,7 @@ Add your repository to the appropriate component in
 2. **Edit the config**: Add your repository using the format `"org-name/repo-name"`
 3. **Validate**: Run `python scripts/validate_config.py` to check for errors
 4. **Test**: Use `DRY_RUN=true python -m snyk_jira_reporter --disable-dep-analysis` to verify
-5. **Resolve existing issues**: Run `python -m snyk_jira_reporter --resolve-unmapped` to update any
-   existing unmapped Jira issues
+5. **Automatic resolution**: Unmapped issues are automatically resolved during the next weekly run
 
 ### Validation
 
