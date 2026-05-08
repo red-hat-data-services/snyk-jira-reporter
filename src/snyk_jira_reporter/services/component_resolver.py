@@ -13,6 +13,7 @@ from snyk_jira_reporter.config.constants import (
     UID_REGEX,
 )
 from snyk_jira_reporter.exceptions.exceptions import JiraClientError
+from snyk_jira_reporter.utils.adf_parser import extract_text_from_adf
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ def _extract_uid_from_description(description: str | dict[str, Any] | None) -> s
     description_text = ""
     if isinstance(description, dict):
         # Extract text from ADF format (same logic as JiraClient)
-        description_text = _extract_text_from_adf(description)
+        description_text = extract_text_from_adf(description)
     elif isinstance(description, str):
         description_text = description
     else:
@@ -42,26 +43,6 @@ def _extract_uid_from_description(description: str | dict[str, Any] | None) -> s
     # Look for UID pattern in description
     match = re.search(UID_REGEX, description_text)
     return match.group(1) if match else None
-
-
-def _extract_text_from_adf(adf_content: dict[str, Any]) -> str:
-    """Extract plain text from Atlassian Document Format content."""
-
-    def extract_text_recursive(node: Any) -> str:
-        if isinstance(node, dict):
-            text = ""
-            if node.get("type") == "text":
-                text += node.get("text", "")
-            elif "content" in node:
-                for child in node["content"]:
-                    text += extract_text_recursive(child)
-            return text
-        elif isinstance(node, list):
-            return "".join(extract_text_recursive(item) for item in node)
-        else:
-            return str(node) if node else ""
-
-    return extract_text_recursive(adf_content)
 
 
 def _extract_project_from_uid(uid: str) -> str | None:
@@ -268,8 +249,7 @@ Add your repository to the appropriate component in
 2. **Edit the config**: Add your repository using the format `"org-name/repo-name"`
 3. **Validate**: Run `python scripts/validate_config.py` to check for errors
 4. **Test**: Use `DRY_RUN=true python -m snyk_jira_reporter --disable-dep-analysis` to verify
-5. **Resolve existing issues**: Run `python -m snyk_jira_reporter --resolve-unmapped` to update any
-   existing unmapped Jira issues
+5. **Automatic resolution**: Unmapped issues are automatically resolved during the next weekly run
 
 ### Validation
 

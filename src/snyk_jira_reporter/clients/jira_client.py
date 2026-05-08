@@ -16,6 +16,7 @@ from snyk_jira_reporter.config.constants import (
 )
 from snyk_jira_reporter.exceptions.exceptions import JiraClientError
 from snyk_jira_reporter.models.vulnerability import VulnerabilityData
+from snyk_jira_reporter.utils.adf_parser import extract_text_from_adf
 from snyk_jira_reporter.utils.labels import create_labels, get_jira_priority
 
 logger = logging.getLogger(__name__)
@@ -212,7 +213,7 @@ class JiraClient:
         description_text = ""
         if isinstance(description, dict):
             # Extract text from ADF format
-            description_text = self._extract_text_from_adf(description)
+            description_text = extract_text_from_adf(description)
         elif isinstance(description, str):
             description_text = description
         else:
@@ -240,24 +241,6 @@ class JiraClient:
 
         # Check if branch matches any of the acceptable branches
         return uid_branch in branches
-
-    def _extract_text_from_adf(self, adf_content: dict[str, Any]) -> str:
-        """Extract plain text from Atlassian Document Format content."""
-
-        def extract_text_recursive(node: Any) -> str:
-            if isinstance(node, dict):
-                text = ""
-                if "text" in node:
-                    text += node["text"]
-                if "content" in node:
-                    for child in node["content"]:
-                        text += extract_text_recursive(child)
-                return text
-            elif isinstance(node, list):
-                return "".join(extract_text_recursive(item) for item in node)
-            return str(node)
-
-        return extract_text_recursive(adf_content)
 
     def _strip_wiki_markup(self, text: str) -> str:
         """Strip common Jira wiki markup patterns to prevent ADF rendering issues.
