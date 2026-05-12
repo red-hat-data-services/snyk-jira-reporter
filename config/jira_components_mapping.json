@@ -22,7 +22,8 @@
     "AI Safety": [
         "red-hat-data-services/trustyai-explainability",
         "red-hat-data-services/trustyai-explainability-python",
-        "red-hat-data-services/trustyai-service-operator"
+        "red-hat-data-services/trustyai-service-operator",
+        "red-hat-data-services/llama-stack-provider-trustyai-garak"
     ],
     "AI Evaluations": [
         "red-hat-data-services/lm-evaluation-harness",
