@@ -75,8 +75,8 @@
         "red-hat-data-services/feast"
     ],
     "Llama Stack Core": [
-        "red-hat-data-services/llama-stack-k8s-operator",
-        "opendatahub-io/llama-stack"
+        "red-hat-data-services/ogx-k8s-operator",
+        "opendatahub-io/ogx"
     ],
     "Kubeflow Unified SDK": [
         "opendatahub-io/kubeflow-sdk"
