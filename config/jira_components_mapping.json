@@ -97,6 +97,9 @@
     "Inference Gateway": [
         "opendatahub-io/ai-gateway-payload-processing"
     ],
+    "Batch Gateway": [
+        "red-hat-data-services/batch-gateway"
+    ],
     "AgentOps": [
         "red-hat-data-services/agents-operator"
     ]
