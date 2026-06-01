@@ -1,10 +1,13 @@
 # Unmapped Repositories
 
-*Auto-updated after each weekly scan - 2026-05-07*
+*Auto-updated after each weekly scan - 2026-06-01*
 
-**0 repositories need component mapping**
+**2 repositories need component mapping**
 
-All repositories are properly mapped!
+The following repositories were discovered in Snyk but don't have component assignments in the Jira integration:
+
+- `kagenti/kagenti`
+- `red-hat-data-services/llm-d-kv-cache`
 
 ## How to Fix
 

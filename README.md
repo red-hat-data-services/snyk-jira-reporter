@@ -399,9 +399,9 @@ Need help? Check the troubleshooting section above or reach out to the team!
 
 ## Repository Component Mapping
 
-*Last updated: 2026-05-07*
+*Last updated: 2026-06-01*
 
-**Status**: 1 repositories need mapping
+**Status**: 2 repositories need mapping
 
 **[View detailed unmapped repositories report →](UNMAPPED_REPOSITORIES.md)**
 
