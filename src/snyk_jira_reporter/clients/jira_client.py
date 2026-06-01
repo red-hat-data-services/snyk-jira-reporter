@@ -144,12 +144,9 @@ class JiraClient:
         Raises:
             JiraClientError: If the Jira search fails.
         """
-        component = self.component_mapping.get(project_name, "")
-        component_str = f'component = "{component}" AND ' if component else ""
-
-        # Create broader search to find both old and new format issues
-        # Search for any issues with this project and file combination
-        project_file_pattern = f"{self.jira_label_prefix}{project_name}:{file_name}:"
+        # Use a broad, reliable search and filter precisely in code
+        # Avoid complex text patterns in JQL that can fail with special characters
+        repository_key = project_name.replace("/", "-").replace(".", "-")  # Safer for JQL
 
         # Handle branch variations: search for both current branch and master/main variations
         branches_to_search = [project_branch]
@@ -158,14 +155,22 @@ class JiraClient:
         elif project_branch == "master":
             branches_to_search.append("main")  # Also search for new main branch issues
 
-        # Create a broader JQL query to find related issues
+        # Broad search using simple, reliable patterns - filter precisely in application code
         jira_query = (
-            f"project = {self.jira_project_key} AND {component_str}"
-            f'description ~ "{project_file_pattern}" AND description ~ "snyk-jira-uid"'
+            f"project = {self.jira_project_key} AND "
+            f'description ~ "{self.jira_label_prefix}" AND '
+            f'description ~ "{repository_key}" AND '
+            f'description ~ "snyk-jira-uid"'
         )
+
+        # Store the original pattern for logging and debugging
+        project_file_pattern = f"{self.jira_label_prefix}{project_name}:{file_name}:"
 
         logger.info("Fetching jiras using jql: %s", jira_query)
         logger.debug("Searching for project: %s, file: %s, branches: %s", project_name, file_name, branches_to_search)
+        logger.debug(
+            "JQL safe pattern: repository_key='%s', original pattern='%s'", repository_key, project_file_pattern
+        )
 
         try:
             # Use JIRA library for automatic pagination and robust error handling
@@ -177,6 +182,8 @@ class JiraClient:
 
             # Convert JIRA library objects to dicts and filter results
             filtered_issues = []
+            logger.debug("Raw JQL search returned %d issues", len(raw_issues))
+
             for issue in raw_issues:
                 # Convert JIRA issue object to dict format
                 issue_dict: dict[str, Any] = {
@@ -192,9 +199,16 @@ class JiraClient:
 
                 # Check if this issue matches our project/file/branch criteria
                 description = issue_dict["fields"].get("description", "") or ""
+                status_name = issue_dict["fields"].get("status", {}).get("name", "")
+
+                logger.debug("  Evaluating issue %s (status: %s)", issue.key, status_name)
+                logger.debug("    Description length: %d chars", len(str(description)))
+
                 if self._issue_matches_criteria(description, project_name, file_name, branches_to_search):
                     filtered_issues.append(issue_dict)
-                    logger.debug("  Found matching issue: %s", issue.key)
+                    logger.debug("  ✓ Found matching issue: %s", issue.key)
+                else:
+                    logger.debug("  ❌ Issue %s doesn't match criteria", issue.key)
 
             logger.debug("Total filtered issues found: %d", len(filtered_issues))
             return filtered_issues
@@ -214,20 +228,27 @@ class JiraClient:
         if isinstance(description, dict):
             # Extract text from ADF format
             description_text = extract_text_from_adf(description)
+            logger.debug("    Extracted ADF text (%d chars): %s...", len(description_text), description_text[:100])
         elif isinstance(description, str):
             description_text = description
+            logger.debug("    Plain text description (%d chars): %s...", len(description_text), description_text[:100])
         else:
             description_text = str(description) if description else ""
+            logger.debug("    Converted description to text: %s", description_text)
 
         # Extract UID from description
         match = re.search(UID_REGEX, description_text)
         if not match:
+            logger.debug("    ❌ No UID match found with regex: %s", UID_REGEX)
+            logger.debug("    Description preview: %s", description_text[:200] if description_text else "EMPTY")
             return False
 
         uid = match.group(1).strip()
         uid_parts = uid.split(":")
+        logger.debug("    ✓ Extracted UID: %s", uid)
 
         if len(uid_parts) < 4:
+            logger.debug("    ❌ UID has insufficient parts (%d < 4): %s", len(uid_parts), uid_parts)
             return False
 
         # Parse UID: prefix:project:file:branch[:optional-id]
@@ -235,12 +256,22 @@ class JiraClient:
         uid_file = uid_parts[2]
         uid_branch = uid_parts[3]
 
+        logger.debug("    UID components - project: %s, file: %s, branch: %s", uid_project, uid_file, uid_branch)
+        logger.debug("    Target criteria - project: %s, file: %s, branches: %s", project_name, file_name, branches)
+
         # Check if project and file match
         if uid_project != project_name or uid_file != file_name:
+            logger.debug("    ❌ Project/file mismatch: %s/%s != %s/%s", uid_project, uid_file, project_name, file_name)
             return False
 
         # Check if branch matches any of the acceptable branches
-        return uid_branch in branches
+        branch_match = uid_branch in branches
+        if branch_match:
+            logger.debug("    ✓ Branch matches: %s in %s", uid_branch, branches)
+        else:
+            logger.debug("    ❌ Branch mismatch: %s not in %s", uid_branch, branches)
+
+        return branch_match
 
     def _strip_wiki_markup(self, text: str) -> str:
         """Strip common Jira wiki markup patterns to prevent ADF rendering issues.
