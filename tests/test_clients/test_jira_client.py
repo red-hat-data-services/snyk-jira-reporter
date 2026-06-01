@@ -135,7 +135,8 @@ class TestJiraClientGetExisting:
         call_args = mock_jira_instance.search_issues.call_args
         jql_query = call_args[0][0]  # First positional argument
         assert "project = MYPROJECT" in jql_query
-        assert 'component = "Component"' in jql_query
+        # Component filtering is disabled to prevent missing unmapped issues
+        assert "component" not in jql_query
 
     @patch("snyk_jira_reporter.clients.jira_client.JIRA")
     def test_jql_without_component(self, mock_jira_class) -> None:
@@ -157,8 +158,153 @@ class TestJiraClientGetExisting:
         )
         client.get_existing_jira_for_project("unknown/repo", "file.py", "main")
 
-        # Check that component is not in the JQL query
+        # Check that component filtering is disabled
         assert mock_jira_instance.search_issues.called
         call_args = mock_jira_instance.search_issues.call_args
         jql_query = call_args[0][0]  # First positional argument
         assert "component" not in jql_query
+
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
+    def test_includes_all_issue_statuses(self, mock_jira_class) -> None:
+        """Test that JQL includes all issue statuses to avoid missing unmapped issues."""
+        # Mock JIRA library search
+        mock_jira_instance = Mock()
+        mock_jira_instance.search_issues.return_value = []
+        mock_jira_class.return_value = mock_jira_instance
+
+        client = JiraClient(
+            jira_server="https://jira.test.com",
+            jira_email="test@example.com",
+            jira_api_token="token",
+            jira_label_prefix="snyk-jira-integration:",
+            jira_project_id="12345",
+            jira_project_key="TEST",
+            component_mapping={},
+            dry_run=False,
+        )
+        client.get_existing_jira_for_project("test/repo", "file.py", "main")
+
+        # Check that the JQL query does not filter by status
+        assert mock_jira_instance.search_issues.called
+        call_args = mock_jira_instance.search_issues.call_args
+        jql_query = call_args[0][0]  # First positional argument
+        assert "status" not in jql_query
+
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
+    def test_filters_issues_by_uid_match(self, mock_jira_class) -> None:
+        """Test that only issues matching UID criteria are returned."""
+        # Mock JIRA issue objects
+        mock_issue_matching = Mock()
+        mock_issue_matching.key = "TEST-1"
+        mock_issue_matching.fields.summary = "Test Issue 1"
+        mock_issue_matching.fields.description = (
+            "##snyk-jira-uid##snyk-jira-integration:test/repo:file.py:main:123-456-789"
+        )
+        mock_issue_matching.fields.status.name = "Open"
+        mock_issue_matching.fields.components = []
+        mock_issue_matching.fields.labels = []
+
+        mock_issue_non_matching = Mock()
+        mock_issue_non_matching.key = "TEST-2"
+        mock_issue_non_matching.fields.summary = "Test Issue 2"
+        mock_issue_non_matching.fields.description = (
+            "##snyk-jira-uid##snyk-jira-integration:other/repo:other.py:main:987-654-321"
+        )
+        mock_issue_non_matching.fields.status.name = "Open"
+        mock_issue_non_matching.fields.components = []
+        mock_issue_non_matching.fields.labels = []
+
+        # Mock JIRA library search
+        mock_jira_instance = Mock()
+        mock_jira_instance.search_issues.return_value = [mock_issue_matching, mock_issue_non_matching]
+        mock_jira_class.return_value = mock_jira_instance
+
+        client = JiraClient(
+            jira_server="https://jira.test.com",
+            jira_email="test@example.com",
+            jira_api_token="token",
+            jira_label_prefix="snyk-jira-integration:",
+            jira_project_id="12345",
+            jira_project_key="TEST",
+            component_mapping={},
+            dry_run=False,
+        )
+
+        result = client.get_existing_jira_for_project("test/repo", "file.py", "main")
+
+        # Should return only the matching issue
+        assert len(result) == 1
+        assert result[0]["key"] == "TEST-1"
+
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
+    def test_handles_master_main_branch_normalization(self, mock_jira_class) -> None:
+        """Test that master/main branch variations are handled correctly."""
+        # Mock JIRA issue created for master branch
+        mock_issue = Mock()
+        mock_issue.key = "TEST-1"
+        mock_issue.fields.summary = "Test Issue"
+        mock_issue.fields.description = "##snyk-jira-uid##snyk-jira-integration:test/repo:file.py:master:123-456-789"
+        mock_issue.fields.status.name = "Open"
+        mock_issue.fields.components = []
+        mock_issue.fields.labels = []
+
+        # Mock JIRA library search
+        mock_jira_instance = Mock()
+        mock_jira_instance.search_issues.return_value = [mock_issue]
+        mock_jira_class.return_value = mock_jira_instance
+
+        client = JiraClient(
+            jira_server="https://jira.test.com",
+            jira_email="test@example.com",
+            jira_api_token="token",
+            jira_label_prefix="snyk-jira-integration:",
+            jira_project_id="12345",
+            jira_project_key="TEST",
+            component_mapping={},
+            dry_run=False,
+        )
+
+        # Search for main branch should find master branch issue
+        result = client.get_existing_jira_for_project("test/repo", "file.py", "main")
+
+        # Should find the master branch issue when searching for main
+        assert len(result) == 1
+        assert result[0]["key"] == "TEST-1"
+
+    @patch("snyk_jira_reporter.clients.jira_client.JIRA")
+    def test_finds_issues_without_component_when_mapping_exists(self, mock_jira_class) -> None:
+        """Test that issues created before component mapping was added are still found.
+
+        This is the regression test for the root cause of duplicate issues:
+        when a component mapping is added for a previously unmapped repo,
+        the search must still find old issues that have no component set.
+        """
+        mock_issue_no_component = Mock()
+        mock_issue_no_component.key = "TEST-1"
+        mock_issue_no_component.fields.summary = "Old issue without component"
+        mock_issue_no_component.fields.description = (
+            "##snyk-jira-uid##snyk-jira-integration:test/repo:Dockerfile:main:vuln-123"
+        )
+        mock_issue_no_component.fields.status.name = "Open"
+        mock_issue_no_component.fields.components = []
+        mock_issue_no_component.fields.labels = []
+
+        mock_jira_instance = Mock()
+        mock_jira_instance.search_issues.return_value = [mock_issue_no_component]
+        mock_jira_class.return_value = mock_jira_instance
+
+        client = JiraClient(
+            jira_server="https://jira.test.com",
+            jira_email="test@example.com",
+            jira_api_token="token",
+            jira_label_prefix="snyk-jira-integration:",
+            jira_project_id="12345",
+            jira_project_key="TEST",
+            component_mapping={"test/repo": "Model Serving"},
+            dry_run=False,
+        )
+
+        result = client.get_existing_jira_for_project("test/repo", "Dockerfile", "main")
+
+        assert len(result) == 1
+        assert result[0]["key"] == "TEST-1"

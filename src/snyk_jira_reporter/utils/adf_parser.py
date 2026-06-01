@@ -18,13 +18,17 @@ def extract_text_from_adf(adf_content: dict[str, Any]) -> str:
 
     def extract_text_recursive(node: Any) -> str:
         if isinstance(node, dict):
-            text = ""
-            if node.get("type") == "text":
-                text += node.get("text", "")
-            elif "content" in node:
-                for child in node["content"]:
-                    text += extract_text_recursive(child)
-            return text
+            node_type = node.get("type", "")
+            if node_type == "text":
+                return str(node.get("text", ""))
+            if node_type == "hardBreak":
+                return " "
+            if "content" in node:
+                children_text = "".join(extract_text_recursive(child) for child in node["content"])
+                if node_type in ("paragraph", "heading", "blockquote", "codeBlock", "rule"):
+                    return children_text + "\n"
+                return children_text
+            return ""
         elif isinstance(node, list):
             return "".join(extract_text_recursive(item) for item in node)
         else:
