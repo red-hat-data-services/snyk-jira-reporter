@@ -64,6 +64,7 @@
     "Training Kubeflow": [
         "red-hat-data-services/training-operator",
         "red-hat-data-services/trainer",
+        "red-hat-data-services/trainer-operator",
         "foundation-model-stack/fms-hf-tuning"
     ],
     "Notebooks Server": [
