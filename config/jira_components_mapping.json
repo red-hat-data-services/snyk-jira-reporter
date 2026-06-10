@@ -2,6 +2,7 @@
     "Model Serving": [
         "red-hat-data-services/kserve",
         "red-hat-data-services/kserve-autogluon-server",
+        "red-hat-data-services/llm-d-routing-sidecar",
         "red-hat-data-services/modelmesh-serving",
         "red-hat-data-services/odh-model-controller",
         "red-hat-data-services/modelmesh",
@@ -10,7 +11,6 @@
     ],
     "llm-d": [
         "red-hat-data-services/llm-d-inference-scheduler",
-        "red-hat-data-services/llm-d-routing-sidecar",
         "red-hat-data-services/llm-d-kv-cache",
         "red-hat-data-services/workload-variant-autoscaler"
     ],
@@ -107,7 +107,8 @@
     "Batch Gateway": [
         "red-hat-data-services/batch-gateway",
         "red-hat-data-services/llm-d-async",
-        "red-hat-data-services/llm-d-batch-gateway-operator"
+        "red-hat-data-services/llm-d-batch-gateway-operator",
+        "red-hat-data-services/ai-gateway-operator"
     ],
     "AgentOps": [
         "red-hat-data-services/agents-operator"
