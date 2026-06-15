@@ -1,13 +1,12 @@
 # Unmapped Repositories
 
-*Auto-updated after each weekly scan - 2026-06-08*
+*Auto-updated after each weekly scan - 2026-06-15*
 
-**2 repositories need component mapping**
+**1 repositories need component mapping**
 
 The following repositories were discovered in Snyk but don't have component assignments in the Jira integration:
 
 - `kagenti/kagenti`
-- `red-hat-data-services/llm-d-kv-cache`
 
 ## How to Fix
 
@@ -26,7 +25,7 @@ Add your repository to the appropriate component in
 
 ### Available Components
 
-`AAET DevOps`, `AI Core Dashboard`, `AI Core Platform`, `AI Core Platform Security`, `AI Evaluations`, `AI First`, `AI Hub`, `AI Pipelines`, `AI Platform DevOps`, `AI Safety`, `AgentDev`, `AgentOps`, `Agentic`, `Agile Roadmap`, `AutoML`, `AutoRAG`, `BSA`, `Build and Release`, `CI/CD`, `Customer Exploration & Test`, `Data Processing`, `DevOps`, `Documentation`, `Experiment Tracking`, `Feature Store`, `Fine Tuning`, `Gen AI Studio`, `IBM P`, `IBM Z`, `Inference Extensions`, `Inference Gateway`, `InfraOps`, `Internal Processes & Documentation`, `KubeRay`, `Kubeflow Spark Operator`, `Kubeflow Unified SDK`, `Llama Stack Core`, `MLflow`, `Model Runtimes`, `Model Server`, `Model Serving`, `Model as a Service`, `Monitoring`, `Notebooks Extensions`, `Notebooks Images`, `Notebooks Server`, `OpenShift AI Productization`, `PXE`, `QE`, `RAG + Vector DB`, `RAG_Agentic`, `Security`, `TestOps`, `Training Kubeflow`, `UXD`, `Update This Field With Components`, `Workload Orchestration`, `llm-d`, `to-refine`
+`AAET DevOps`, `AI Core Dashboard`, `AI Core Platform`, `AI Core Platform Security`, `AI Evaluations`, `AI First`, `AI Hub`, `AI Pipelines`, `AI Platform DevOps`, `AI Safety`, `AgentDev`, `AgentOps`, `Agentic`, `Agile Roadmap`, `AutoML`, `AutoRAG`, `BSA`, `Build and Release`, `CI/CD`, `Customer Exploration & Test`, `Data Processing`, `DevOps`, `Documentation`, `Feature Store`, `Fine Tuning`, `Gen AI Studio`, `IBM P`, `IBM Z`, `Inference Extensions`, `Inference Gateway`, `InfraOps`, `Internal Processes & Documentation`, `KubeRay`, `Kubeflow Spark Operator`, `Kubeflow Unified SDK`, `MLflow`, `Model Runtimes`, `Model Server`, `Model Serving`, `Model as a Service`, `Monitoring`, `Notebooks Extensions`, `Notebooks Images`, `Notebooks Server`, `OGX Core`, `OpenShift AI Productization`, `PXE`, `QE`, `RAG + Vector DB`, `RAG_Agentic`, `Security`, `Serving Orchestration`, `TestOps`, `Training Kubeflow`, `UXD`, `Update This Field With Components`, `Workload Orchestration`, `llm-d`, `to-refine`
 
 ### Steps to Add Mapping
 
