@@ -98,8 +98,8 @@
     "Model as a Service": [
         "red-hat-data-services/models-as-a-service"
     ],
-    "Spark Operator": [
-        "red-hat-data-services/spark-operator"
+    "Kubeflow Spark Operator": [
+        "red-hat-data-services/kubeflow-spark-operator"
     ],
     "Inference Gateway": [
         "opendatahub-io/ai-gateway-payload-processing"
