@@ -399,7 +399,7 @@ Need help? Check the troubleshooting section above or reach out to the team!
 
 ## Repository Component Mapping
 
-*Last updated: 2026-06-15*
+*Last updated: 2026-06-22*
 
 **Status**: 1 repositories need mapping
 
