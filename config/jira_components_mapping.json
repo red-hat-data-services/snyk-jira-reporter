@@ -115,5 +115,9 @@
     ],
     "AI Navigator": [
         "red-hat-data-services/rhoai-mcp"
+    ],
+    "OCPMCPLO": [
+        "red-hat-data-services/mcp-lifecycle-operator",
+        "red-hat-data-services/mcp-lifecycle-module-operator"
     ]
 }
