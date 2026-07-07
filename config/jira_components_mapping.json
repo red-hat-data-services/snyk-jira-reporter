@@ -84,7 +84,7 @@
         "red-hat-data-services/feast",
         "opendatahub-io/feast"
     ],
-    "Llama Stack Core": [
+    "OGX Core": [
         "red-hat-data-services/ogx-k8s-operator",
         "opendatahub-io/ogx"
     ],
