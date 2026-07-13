@@ -10,9 +10,13 @@
         "red-hat-data-services/modelmesh-runtime-adapter"
     ],
     "llm-d": [
-        "red-hat-data-services/llm-d-inference-scheduler",
+        "red-hat-data-services/llm-d-router",
         "red-hat-data-services/llm-d-kv-cache",
-        "red-hat-data-services/workload-variant-autoscaler"
+        "red-hat-data-services/workload-variant-autoscaler",
+        "red-hat-data-services/llm-d-async",
+        "red-hat-data-services/llm-d-latency-predictor",
+        "red-hat-data-services/llm-d-batch-gateway-operator",
+        "red-hat-data-services/batch-gateway"
     ],
     "AI Pipelines": [
         "red-hat-data-services/data-science-pipelines-tekton",
