@@ -100,19 +100,14 @@
         "red-hat-data-services/mlflow-operator"
     ],
     "Model as a Service": [
-        "red-hat-data-services/models-as-a-service"
+        "red-hat-data-services/models-as-a-service",
+        "red-hat-data-services/ai-gateway-operator"
     ],
     "Kubeflow Spark Operator": [
         "red-hat-data-services/kubeflow-spark-operator"
     ],
     "Inference Gateway": [
         "opendatahub-io/ai-gateway-payload-processing"
-    ],
-    "Batch Gateway": [
-        "red-hat-data-services/batch-gateway",
-        "red-hat-data-services/llm-d-async",
-        "red-hat-data-services/llm-d-batch-gateway-operator",
-        "red-hat-data-services/ai-gateway-operator"
     ],
     "AgentOps": [
         "red-hat-data-services/agents-operator"
