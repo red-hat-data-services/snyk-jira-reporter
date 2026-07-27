@@ -90,6 +90,7 @@
     ],
     "OGX Core": [
         "red-hat-data-services/ogx-k8s-operator",
+        "red-hat-data-services/ogx-distribution",
         "opendatahub-io/ogx"
     ],
     "Kubeflow Unified SDK": [
