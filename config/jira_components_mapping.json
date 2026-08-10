@@ -50,7 +50,8 @@
     ],
     "AI Core Platform": [
         "red-hat-data-services/rhods-operator",
-        "red-hat-data-services/kube-auth-proxy"
+        "red-hat-data-services/kube-auth-proxy",
+        "red-hat-data-services/odh-observability"
     ],
     "Model Runtimes": [
         "red-hat-data-services/openvino_model_server",
