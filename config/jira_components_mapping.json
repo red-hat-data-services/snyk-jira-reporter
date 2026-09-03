@@ -120,5 +120,9 @@
     "OCPMCPLO": [
         "red-hat-data-services/mcp-lifecycle-operator",
         "red-hat-data-services/mcp-lifecycle-module-operator"
+    ],
+    "AI Gateway": [
+        "red-hat-data-services/praxis-extproc",
+        "red-hat-data-services/ai-gateway-controller"
     ]
 }
