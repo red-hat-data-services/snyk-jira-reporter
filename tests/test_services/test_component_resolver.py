@@ -1,6 +1,6 @@
 """Tests for component resolver service."""
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -8,6 +8,7 @@ from snyk_jira_reporter.exceptions.exceptions import JiraClientError
 from snyk_jira_reporter.services.component_resolver import (
     _extract_project_from_uid,
     _extract_uid_from_description,
+    generate_component_report,
     resolve_unmapped_issues,
 )
 
@@ -137,3 +138,12 @@ class TestComponentResolver:
         resolved_count = resolve_unmapped_issues(mock_jira_client)
 
         assert resolved_count == 0  # No issues successfully resolved
+
+    def test_report_search_failure_does_not_publish_empty_report(self, mock_jira_client):
+        """A Jira search failure must not be reported as all repositories mapped."""
+        mock_jira_client.search_issues_by_label.side_effect = JiraClientError("Search failed")
+
+        with patch("snyk_jira_reporter.services.component_resolver._write_unmapped_file") as write_report:
+            assert generate_component_report(mock_jira_client, {}) == 1
+
+        write_report.assert_not_called()

@@ -147,14 +147,10 @@ class SnykJiraReporterApp:
         Raises:
             SnykJiraReporterError: If report generation fails critically.
         """
-        try:
-            self._logger.info("Generating component reports...")
-            generate_component_report(jira_client, self.components_mapping)
-            self._logger.info("Component reports generated successfully")
-
-        except Exception as e:
-            # Log error but don't fail entire process for report generation
-            self._logger.error("Report generation failed: %s", e)
+        self._logger.info("Generating component reports...")
+        if generate_component_report(jira_client, self.components_mapping) != 0:
+            raise SnykJiraReporterError("Component report generation failed")
+        self._logger.info("Component reports generated successfully")
 
     def execute(self) -> int:
         """Execute the complete workflow.
