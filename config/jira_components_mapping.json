@@ -45,6 +45,11 @@
         "red-hat-data-services/notebooks",
         "red-hat-data-services/s2i-python-anaconda-base"
     ],
+    "Notebooks Extensions": [
+        "opendatahub-io/kale",
+        "opendatahub-io/elyra",
+        "opendatahub-io/odh-ide-extensions"
+    ],
     "AI Core Dashboard": [
         "red-hat-data-services/odh-dashboard"
     ],
