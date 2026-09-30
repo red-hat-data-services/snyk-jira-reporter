@@ -399,11 +399,8 @@ Need help? Check the troubleshooting section above or reach out to the team!
 
 ## Repository Component Mapping
 
-*Last updated: 2026-07-13*
-
-**Status**: All repositories mapped
-
-**[View detailed unmapped repositories report →](UNMAPPED_REPOSITORIES.md)**
+The weekly Snyk-to-Jira workflow generates the current component mapping report. Open the
+[workflow runs](https://github.com/red-hat-data-services/snyk-jira-reporter/actions/workflows/jira-snyk.yaml)
+and select the latest run to read the report in its summary or download the `component-mapping-report` artifact.
 
 ---
-

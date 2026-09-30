@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 5 * * 1' # A cron job which runs at 5 AM on every Monday.
+permissions:
+  contents: read
 env:
   # secrets
   JIRA_API_TOKEN: ${{ secrets.jira_api_token }}
@@ -41,11 +43,12 @@ jobs:
       - name: execute py script for automation
         run: python -m snyk_jira_reporter --disable-dep-analysis
 
-      - name: commit and push report updates
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Show component report in run summary
+        run: cat UNMAPPED_REPOSITORIES.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload component report
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "chore: update component mapping reports [skip ci]"
-          file_pattern: "UNMAPPED_REPOSITORIES.md README.md"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
-          skip_dirty_check: false
+          name: component-mapping-report
+          path: UNMAPPED_REPOSITORIES.md
+          if-no-files-found: error

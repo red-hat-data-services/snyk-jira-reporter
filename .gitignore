@@ -13,3 +13,4 @@ build/
 .coverage.*
 htmlcov/
 Pipfile
+UNMAPPED_REPOSITORIES.md

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate unmapped repositories report and update README with link."""
+"""Generate an unmapped repositories report."""
 
 import argparse
 import json
@@ -27,7 +27,7 @@ except ImportError as e:
 
 def main() -> int:
     """Main function."""
-    parser = argparse.ArgumentParser(description="Generate unmapped repositories report and update README")
+    parser = argparse.ArgumentParser(description="Generate unmapped repositories report")
     parser.add_argument("--output-json", help="Output unmapped repositories to JSON file (optional)")
 
     args = parser.parse_args()
@@ -63,6 +63,8 @@ def main() -> int:
 
         # Generate the report using the service function (eliminates code duplication)
         result_code = generate_component_report(jira_client, component_mapping)
+        if result_code != 0:
+            return result_code
 
         # Output to JSON if requested (extra feature of the script)
         if args.output_json:
@@ -80,7 +82,6 @@ def main() -> int:
 
         print("Generated component mapping report successfully")
         print("- Created UNMAPPED_REPOSITORIES.md with detailed information")
-        print("- Updated README.md with link to the detailed report")
         return result_code
 
     except (ValidationError, JiraClientError) as e:
