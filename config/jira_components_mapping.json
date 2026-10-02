@@ -108,7 +108,8 @@
     ],
     "Model as a Service": [
         "red-hat-data-services/models-as-a-service",
-        "red-hat-data-services/ai-gateway-operator"
+        "red-hat-data-services/ai-gateway-operator",
+        "red-hat-data-services/ai-gateway-controller"
     ],
     "Kubeflow Spark Operator": [
         "red-hat-data-services/kubeflow-spark-operator"
@@ -127,7 +128,6 @@
         "red-hat-data-services/mcp-lifecycle-module-operator"
     ],
     "AI Gateway": [
-        "red-hat-data-services/praxis-extproc",
-        "red-hat-data-services/ai-gateway-controller"
+        "red-hat-data-services/praxis-extproc"
     ]
 }
