@@ -129,5 +129,8 @@
     ],
     "AI Gateway": [
         "red-hat-data-services/praxis-extproc"
+    ],
+    "Data Connect Hub": [
+        "red-hat-data-services/data-connect-hub"
     ]
 }
