@@ -38,7 +38,7 @@ class TestAppSettings:
             jira_email: str
             jira_api_token: str
             jira_project_id: str
-            jira_project_key: str = "RHOAIENG"
+            jira_project_key: str = "RHAI"
             # No env_file config to avoid loading .env
 
         with pytest.raises(ValidationError):
@@ -79,14 +79,14 @@ class TestAppSettings:
             jira_email: str
             jira_api_token: str
             jira_project_id: str
-            jira_project_key: str = "RHOAIENG"
+            jira_project_key: str = "RHAI"
             jira_label_prefix: str = DEFAULT_JIRA_LABEL_PREFIX
             dry_run: bool = False
             component_mapping_file_path: str = DEFAULT_COMPONENT_MAPPING_PATH
             exclude_files_file_path: str = DEFAULT_EXCLUDE_FILES_PATH
 
         settings = TestAppSettings()  # type: ignore[call-arg]
-        assert settings.jira_project_key == "RHOAIENG"
+        assert settings.jira_project_key == "RHAI"
         assert settings.jira_label_prefix == "snyk-jira-integration:"
         assert settings.dry_run is False
         assert settings.component_mapping_file_path == "./config/jira_components_mapping.json"
