@@ -104,7 +104,7 @@ def sample_jira_issue():
     """Create a sample Jira issue dict with UID section."""
     uid = "snyk-jira-integration:red-hat-data-services/kserve:Dockerfile:main:SNYK-PYTHON-REQUESTS-123456"
     return {
-        "key": "RHOAIENG-12345",
+        "key": "RHAI-12345",
         "fields": {
             "description": (
                 "##Do not edit this section below##\n"
@@ -125,7 +125,7 @@ def sample_jira_issue_closed():
     """Create a sample closed Jira issue dict."""
     uid = "snyk-jira-integration:red-hat-data-services/old-project:file.py:main:SNYK-OLD-123"
     return {
-        "key": "RHOAIENG-99999",
+        "key": "RHAI-99999",
         "fields": {
             "description": (
                 f"##Do not edit this section below##\n\n##snyk-jira-uid##{uid} \n\n##Do not edit this section above##\n"
@@ -140,8 +140,8 @@ def mock_jira_client():
     """Create a mocked JiraClient for testing."""
     client = MagicMock()
     client.jira_label_prefix = "snyk-jira-integration:"
-    client.jira_project_id = "12340620"
-    client.jira_project_key = "RHOAIENG"
+    client.jira_project_id = "14071"
+    client.jira_project_key = "RHAI"
     client.component_mapping = {
         "red-hat-data-services/kserve": "Model Serving",
         "red-hat-data-services/odh-dashboard": "Dashboard",
