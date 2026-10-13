@@ -12,6 +12,7 @@ from snyk_jira_reporter.config.constants import (
     JIRA_CLOSE_COMMENT,
     JIRA_CLOSE_TRANSITION,
     JIRA_SECURITY_FIELD_ID,
+    LEGACY_JIRA_PROJECT_KEY,
     UID_REGEX,
 )
 from snyk_jira_reporter.exceptions.exceptions import JiraClientError
@@ -157,7 +158,7 @@ class JiraClient:
 
         # Broad search using simple, reliable patterns - filter precisely in application code
         jira_query = (
-            f"project = {self.jira_project_key} AND "
+            f"(project = {self.jira_project_key} OR project = {LEGACY_JIRA_PROJECT_KEY}) AND "
             f'description ~ "{self.jira_label_prefix}" AND '
             f'description ~ "{repository_key}" AND '
             f'description ~ "snyk-jira-uid"'
