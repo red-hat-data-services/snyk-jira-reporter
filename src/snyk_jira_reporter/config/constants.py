@@ -2,6 +2,7 @@
 
 # Jira
 DEFAULT_JIRA_LABEL_PREFIX = "snyk-jira-integration:"
+LEGACY_JIRA_PROJECT_KEY = "RHOAIENG"
 JIRA_SECURITY_FIELD_ID = "10034"
 JIRA_BUG_ISSUE_TYPE = "Bug"
 JIRA_NON_CLOSEABLE_STATUSES = frozenset({"Resolved", "Closed"})
