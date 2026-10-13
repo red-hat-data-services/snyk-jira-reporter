@@ -12,8 +12,8 @@ env:
   SNYK_API_TOKEN: ${{ secrets.snyk_api_token }}
   # JIRA envs
   JIRA_SERVER: https://redhat.atlassian.net # Jira Cloud server
-  JIRA_PROJECT_ID: 12340620 # refers to RHOAIENG
-  JIRA_PROJECT_KEY: RHOAIENG
+  JIRA_PROJECT_ID: 14071
+  JIRA_PROJECT_KEY: RHAI
   JIRA_LABEL_PREFIX: "snyk-jira-integration:"
   # SNYK envs
   SNYK_ORG_ID: ed870ef2-8f76-4ea1-ad4b-dacfa225eb69 # refers to the RHOAI org in Snyk

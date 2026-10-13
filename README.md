@@ -18,7 +18,7 @@ Automated tool that scans Snyk for security vulnerabilities and creates/manages 
 - Python 3.10+
 - Snyk API token with org access
 - Jira Cloud API token with project access
-- Access to RHOAIENG Jira project
+- Access to the RHAI Jira project
 
 ### Installation
 
@@ -68,7 +68,7 @@ JIRA_SERVER=https://redhat.atlassian.net
 JIRA_EMAIL=your-email@redhat.com
 JIRA_API_TOKEN=your-jira-token-here
 JIRA_PROJECT_ID=your-jira-project-id
-JIRA_PROJECT_KEY=RHOAIENG
+JIRA_PROJECT_KEY=RHAI
 
 # Optional Configuration
 DRY_RUN=true
@@ -220,8 +220,8 @@ This helps developers:
 | `JIRA_SERVER` | Yes | - | Jira server URL (e.g., https://redhat.atlassian.net) |
 | `JIRA_EMAIL` | Yes | - | Your email for Jira authentication |
 | `JIRA_API_TOKEN` | Yes | - | Jira API token from Atlassian |
-| `JIRA_PROJECT_ID` | Yes | - | Jira project ID for issue creation |
-| `JIRA_PROJECT_KEY` | No | `RHOAIENG` | Jira project key for JQL queries |
+| `JIRA_PROJECT_ID` | Yes | - | Required Jira project ID setting (issue routing uses the project key) |
+| `JIRA_PROJECT_KEY` | No | `RHAI` | Jira project key for issue creation and JQL queries |
 | `JIRA_LABEL_PREFIX` | No | `snyk-jira-integration:` | Prefix for tracking labels |
 | `DRY_RUN` | No | `false` | If `true`, shows what would happen without creating issues |
 | `COMPONENT_MAPPING_FILE_PATH` | No | `./config/jira_components_mapping.json` | Component mapping config |
@@ -278,7 +278,7 @@ DRY_RUN=true python -m snyk_jira_reporter --allowed-severity critical
 **"Authentication failed - check JIRA_EMAIL and JIRA_API_TOKEN"**
 - Verify your Jira email address is correct
 - Regenerate your Jira API token
-- Check that you have access to the RHOAIENG project
+- Check that you have access to the RHAI project
 
 **"Reached max page limit (100) for JQL query"**
 - This is normal for large projects with many existing issues

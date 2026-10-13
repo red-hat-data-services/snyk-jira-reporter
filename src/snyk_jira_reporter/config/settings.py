@@ -22,7 +22,7 @@ class AppSettings(BaseSettings):
     jira_email: str
     jira_api_token: str
     jira_project_id: str
-    jira_project_key: str = "RHOAIENG"
+    jira_project_key: str = "RHAI"
     jira_label_prefix: str = DEFAULT_JIRA_LABEL_PREFIX
     dry_run: bool = False
     component_mapping_file_path: str = DEFAULT_COMPONENT_MAPPING_PATH
