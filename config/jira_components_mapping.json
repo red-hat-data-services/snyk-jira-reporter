@@ -16,7 +16,9 @@
         "red-hat-data-services/llm-d-async",
         "red-hat-data-services/llm-d-latency-predictor",
         "red-hat-data-services/llm-d-batch-gateway-operator",
-        "red-hat-data-services/batch-gateway"
+        "red-hat-data-services/batch-gateway",
+        "red-hat-data-services/rhaii-cluster-validation",
+        "red-hat-data-services/llm-d-inference-scheduler"
     ],
     "AI Pipelines": [
         "red-hat-data-services/data-science-pipelines-tekton",
