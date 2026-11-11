@@ -133,6 +133,11 @@
     "AI Gateway": [
         "red-hat-data-services/praxis-extproc"
     ],
+    "AI Grid": [
+        "rhoai/odh-praxis-ai-grid-enrollment-rhel9",
+        "rhoai/odh-praxis-ai-grid-gateway-rhel9",
+        "rhoai/odh-praxis-ai-grid-operator-rhel9"
+    ],
     "Data Connect Hub": [
         "red-hat-data-services/data-connect-hub"
     ]
